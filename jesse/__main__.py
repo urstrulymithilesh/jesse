@@ -494,7 +494,7 @@ def _run(argv: list[str]) -> int:
     print(f"   mic   : {dev_label}  (gain x{orch.transport.gain:.1f})")
     print(f"   VAD   : speech > {orch.vad.threshold:.0f} RMS, endpoint after {CONFIG.audio.vad_silence_ms}ms "
           f"silence (min speech {CONFIG.audio.vad_min_speech_ms}ms), pre-roll {CONFIG.audio.preroll_ms}ms")
-    print(f"   wake  : say 'hey jarvis'  (PLACEHOLDER wake word — a custom 'Jesse' word is Phase 4)")
+    print("   wake  : say 'hey jarvis'  (placeholder — 'yo Jesse' gets trained later)")
     print("   stop  : say the stop word while Jesse is speaking to cut him off")
     if url:
         print(f"   ui    : {url}  (type there; it joins the same conversation)")

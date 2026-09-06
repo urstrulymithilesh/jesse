@@ -79,7 +79,12 @@ def test_the_server_serves_the_page_and_round_trips_a_message():
     with urllib.request.urlopen(url, timeout=5) as r:
         page = r.read().decode()
     assert "<title>Jesse</title>" in page
-    assert "background:#000" in page and "color:#fff" in page   # black bg, white text
+    # The page is chat bubbles on charcoal with one accent, replacing the original
+    # black-and-white terminal look. These pin the decisions rather than the palette:
+    # a single accent variable, bubbles rather than lines, and motion that a reader
+    # can switch off.
+    assert "--accent" in page and "--bg:#0e0f12" in page
+    assert "bubble" in page and "prefers-reduced-motion" in page
 
     req = urllib.request.Request(
         url + "/send", data=json.dumps({"text": "typed hello"}).encode(),

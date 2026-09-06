@@ -50,8 +50,11 @@ class SpeechConfig:
     sample_rate: int = 16_000           # pipeline INPUT convention: 16 kHz mono
     # Piper via the piper-tts Python API (no PATH binary). The voice .onnx (+ .json)
     # lives in models/; download with `python -m piper.download_voices <voice> --download-dir models`.
-    # 22050 Hz — playback uses the voice's own rate, input stays 16k. amy-medium (warmer).
-    piper_voice: str = "en_US-amy-medium"
+    # 22050 Hz — playback uses the voice's own rate, input stays 16k.
+    # PROVISIONAL: ryan-high is the best-quality male voice in the catalogue and
+    # stands in until he picks from the four that were A/B-d (ryan, joe, bryce,
+    # sam). Swapping is this one line — the samples are say_en_US-*.wav.
+    piper_voice: str = "en_US-ryan-high"
 
 
 @dataclass(frozen=True)
@@ -90,8 +93,8 @@ class AudioConfig:
 
 @dataclass(frozen=True)
 class WakeConfig:
-    # Stock openWakeWord model until the custom "Jesse" word is trained in Phase 4.
-    model: str = "hey_jarvis"           # placeholder stock word; retrain to "Jesse" later
+    # Stock openWakeWord model until "yo Jesse" is trained (a separate future task).
+    model: str = "hey_jarvis"           # placeholder; the real word will be "yo Jesse"
     stop_word: str = "hey_jarvis"       # kept live during SPEAKING to allow barge-in
 
 

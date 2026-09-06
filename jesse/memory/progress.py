@@ -267,6 +267,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "so there is nothing to copy out by hand at all",
         False,
     ),
+    ProgressEntry(
+        "v2.0 — he is Jesse now", "2026-09-03",
+        "he used to be Isha, and she was meant to be something else entirely — closer, "
+        "softer, a partner. That is not what Mithilesh wanted from him, so he is Jesse: "
+        "his mate, loud and blunt and in his corner, the one who tells him his plan is "
+        "thin and then helps anyway. Same memory, same everything he could already do. "
+        "Different person",
+        True,
+    ),
 ]
 
 

@@ -11,6 +11,11 @@ Python, working tree clean and synced with `github.com/urstrulymithilesh/jesse`.
 
 ## 0. How to work on this project
 
+**He is Jesse — male, he/him.** Renamed from Isha 2026-09-03, package and all:
+the command is `python -m jesse`. Watch the pronouns when editing docs, because
+Mithilesh is also "he" and a bare pronoun no longer distinguishes them — name whoever
+you mean.
+
 Use the **caveman** skill (terse output), **ponytail** (laziest solution that works,
 YAGNI, stdlib before dependencies), and **gstack** together. That combination is how
 this project has been built and it keeps momentum on limited time.
@@ -39,12 +44,15 @@ bug for brevity.
 
 ## 1. The founding concept
 
-Jesse is meant to be a **local AI partner** — girlfriend-like, not a tool with a
-personality bolted on. He lives on one machine, belongs to one person, and never
-sends anything anywhere.
+Jesse is meant to be a **local AI friend** — a mate, a hype man, someone in your
+corner, not a tool with a personality bolted on. He lives on one machine, belongs to
+one person, and never sends anything anywhere.
 
-> **The word "companion" is banned** from his persona and from how he describes
-> himself. It reads as product copy and it was explicitly rejected.
+> **He is NOT a partner and NOT romantic.** He was Isha, a girlfriend-like partner,
+> until 2026-09-03; the relationship was changed deliberately, not drifted into.
+> Close friend, blunt, loud, loyal underneath. The words **"companion"**,
+> **"partner"** and **"assistant"** are all banned from his persona and from how he
+> describes himself.
 
 The full vision, as originally set out:
 
@@ -193,7 +201,22 @@ table, their own deterministic trigger, and no embeddings at all.
 **Feed text is data, never instruction.** Items whose title or summary is shaped like
 an order to an assistant are dropped at ingest (`looks_like_instruction`) — see §6.
 
-### Reaching him from away (remote access)
+### Reaching him from away (remote access) — **PAUSED, do not resume as-is**
+
+> **Paused by him on 2026-09-03: too much friction for the value.** Everything below
+> is built, tested and left in place — nothing was ripped out, `--remote` still works
+> — but it is not the direction. It ate a lot of a session on DNS, certificates and
+> tokens before ever carrying a word of speech.
+>
+> **The eventual goal is a real phone number** — proper VoIP, so he can call Jesse
+> from any handset with no app, no tailnet and no certificate. That is the actual
+> final step, once everything else is solid. The Twilio analysis in §4 (pricing, the
+> India constraint, the `audioop` removal, and the privacy trade that Twilio holds the
+> call audio in the clear) is the starting point for that, and it is the reason this
+> is a "later, properly" item rather than a "next week" one.
+>
+> Do not sink more time into the Tailscale path.
+
 `python -m jesse run --remote` serves a page on port 8766 that his phone opens over
 **Tailscale**. It holds the mic open, downsamples to the 16 kHz mono Int16 the pipeline
 already speaks, and POSTs a chunk about four times a second. Those frames go into the
@@ -450,7 +473,7 @@ The ten-step plan, sequenced by dependency and honest effort.
 | 7 | Agentic computer use (open / find / media) | **done** |
 | 8 | Skill mastery (RAG corpora) | **done** — guidance mode not built |
 | 9 | Proactive daily learning | **done** — reactive by default |
-| 10 | Remote access (Tailscale phone client) | **done** |
+| 10 | Remote access (Tailscale phone client) | built, **PAUSED 2026-09-03** |
 
 **The deterministic registry now has numbers behind it, not just reasoning.**
 Native tool-calling measured on both local models (2026-08-28), temperature 0, on

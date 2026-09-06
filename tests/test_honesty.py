@@ -59,11 +59,30 @@ def test_the_persona_does_not_hand_her_a_quotable_refusal():
     assert "SAY YOU CANNOT KNOW IT" not in SYSTEM_PROMPT
 
 
-def test_the_anti_tic_rule_does_not_itself_use_his_name_as_an_example():
-    """The first version quoted "you're the one who made me, Mithilesh" as the thing to
-    avoid — and he copied the example."""
-    section = SYSTEM_PROMPT.split("TALK TO HIM, NOT ABOUT HIM.")[1].split("\n\n")[0]
-    assert "Mithilesh" not in section
+def test_no_rule_quotes_the_bad_output_it_forbids():
+    """Twice now a rule has caused the thing it was written to prevent.
+
+    First: an anti-tic rule quoted "you're the one who made me, Mithilesh" as the
+    behaviour to avoid, and the model copied the example (0/5 -> 2/5).
+
+    Then, writing Jesse's persona, a rule against empty reactions quoted one — and
+    "Burnt rice, dude" came back as a reply to an unrelated turn about work. Caught by
+    probing, in a file whose own docstring warns against exactly this.
+
+    So: no rule may contain a quoted reply. Describe the shape, never supply the line.
+    """
+    import re
+
+    # Quoted fragments that appear OUTSIDE the labelled few-shot block, where quoting
+    # is the whole point. Everything before that marker is rules.
+    rules = SYSTEM_PROMPT.split("Here is the register.")[0]
+    quoted = re.findall(r'"([^"\n]{6,})"', rules)
+    # Banned PHRASES are legitimate quotes — they are what he must not say, and the
+    # measured risk is the opposite one: a quoted example of a bad REPLY he then makes.
+    banned_section = rules.split("NEVER:")[1] if "NEVER:" in rules else ""
+    offenders = [q for q in quoted
+                 if q not in banned_section and len(q.split()) >= 3]
+    assert not offenders, f"rules quote a repeatable line: {offenders}"
 
 
 # -- the spoken-line cleanup ------------------------------------------------

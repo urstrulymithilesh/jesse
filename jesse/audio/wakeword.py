@@ -5,8 +5,8 @@ the eng review). A headset prevents self-trigger. The same class serves both the
 wake role (IDLE) and the stop role (SPEAKING); config decides which model each uses.
 
 First run downloads the pretrained melspectrogram + embedding models (one-time,
-online); after that it is fully offline. Until the custom "Jesse" word is trained
-in Phase 4, use a stock word (e.g. "hey_jarvis").
+online); after that it is fully offline. Until "yo Jesse" is trained — a separate
+future task — a stock word stands in (e.g. "hey_jarvis").
 """
 
 from __future__ import annotations
