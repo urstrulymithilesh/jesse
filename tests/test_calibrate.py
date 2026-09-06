@@ -1,6 +1,6 @@
 """Unit tests for the auto-calibration decision (pure math, no mic)."""
 
-from isha.audio.calibrate import MAX_GAIN, recommend_audio_settings
+from jesse.audio.calibrate import MAX_GAIN, recommend_audio_settings
 
 
 def test_quiet_laptop_mic_gets_boosted_and_threshold_between_room_and_voice():

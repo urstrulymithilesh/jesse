@@ -1,7 +1,7 @@
 """Remote access: the token, the audio seam, and the confirmation before side effects.
 
 No network and no phone — the HTTP layer is thin by design, so what is pinned here is
-everything that decides who gets in, where audio goes, and what she does before
+everything that decides who gets in, where audio goes, and what he does before
 opening something on a machine he is not sitting at.
 """
 
@@ -9,9 +9,9 @@ import asyncio
 
 import pytest
 
-from isha.audio.frames import CHUNK_SAMPLES
-from isha.remote.auth import RemoteAuth, load_or_create, token_from_request
-from isha.remote.transport import RemoteSource, SwitchingTransport
+from jesse.audio.frames import CHUNK_SAMPLES
+from jesse.remote.auth import RemoteAuth, load_or_create, token_from_request
+from jesse.remote.transport import RemoteSource, SwitchingTransport
 
 FRAME = b"\x01\x02" * CHUNK_SAMPLES
 
@@ -70,12 +70,12 @@ class _Headers(dict):
 
 
 def test_the_token_comes_from_the_header_or_the_first_link():
-    assert token_from_request(_Headers({"X-Isha-Token": "abc"}), "/") == "abc"
+    assert token_from_request(_Headers({"X-Jesse-Token": "abc"}), "/") == "abc"
     assert token_from_request(_Headers(), "/?t=xyz") == "xyz"
     assert token_from_request(_Headers(), "/?t=xyz&since=3") == "xyz"
     assert token_from_request(_Headers(), "/") is None
     # The header wins, so a stale link cannot override a live session.
-    assert token_from_request(_Headers({"X-Isha-Token": "abc"}), "/?t=xyz") == "abc"
+    assert token_from_request(_Headers({"X-Jesse-Token": "abc"}), "/?t=xyz") == "abc"
 
 
 # -- the audio seam ----------------------------------------------------------
@@ -162,8 +162,8 @@ def test_the_phone_stops_being_the_source_once_it_goes_quiet():
 
 
 def test_audio_arriving_while_she_speaks_is_dropped():
-    """Half-duplex, same rule as the desk. Without it her own voice comes back in
-    through the phone's speaker and trips the stop-word on her own reply."""
+    """Half-duplex, same rule as the desk. Without it his own voice comes back in
+    through the phone's speaker and trips the stop-word on his own reply."""
     source = RemoteSource()
     t = SwitchingTransport(_FakeLocal(), source)
     t.mute_input()
@@ -194,8 +194,8 @@ def test_calibration_reaches_the_real_microphone_through_the_wrapper():
 # -- confirming a side effect from the phone ---------------------------------
 
 
-from isha.llm.echo import EchoLLM            # noqa: E402
-from isha.orchestrator import Orchestrator   # noqa: E402
+from jesse.llm.echo import EchoLLM            # noqa: E402
+from jesse.orchestrator import Orchestrator   # noqa: E402
 
 
 class _Silence:
@@ -223,7 +223,7 @@ def _orch(remote_live: bool):
 def test_opening_something_from_the_phone_asks_first(monkeypatch):
     """Telephone-quality speech into the same deterministic parsers that already
     mishear at the desk, for the least reversible thing in the project."""
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
 
@@ -238,7 +238,7 @@ def test_opening_something_from_the_phone_asks_first(monkeypatch):
 
 
 def test_at_the_desk_it_just_opens(monkeypatch):
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
     orch = _orch(remote_live=False)
@@ -249,7 +249,7 @@ def test_at_the_desk_it_just_opens(monkeypatch):
 def test_an_unconfirmed_request_lapses(monkeypatch):
     """It must decay, not sit waiting to be triggered by an unrelated "sure" three
     turns later — the same failure the knowledge ask had."""
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
 
@@ -262,7 +262,7 @@ def test_an_unconfirmed_request_lapses(monkeypatch):
 
 def test_reading_and_searching_are_not_gated(monkeypatch):
     """Reversible or read-only, so they keep full parity over the phone."""
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
     monkeypatch.setattr(o, "find_files", lambda *a, **k: [])
     orch = _orch(remote_live=True)
     note = asyncio.run(orch._handle_action_command("find my tax notes"))
@@ -271,8 +271,8 @@ def test_reading_and_searching_are_not_gated(monkeypatch):
 
 def test_confirmation_can_be_turned_off(monkeypatch):
     from dataclasses import replace
-    import isha.orchestrator as o
-    from isha.config import CONFIG
+    import jesse.orchestrator as o
+    from jesse.config import CONFIG
 
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
@@ -284,16 +284,16 @@ def test_confirmation_can_be_turned_off(monkeypatch):
 
 
 def test_going_quiet_while_she_speaks_does_not_hand_the_floor_back():
-    """The page stops uploading during her reply — that IS the half-duplex rule. An
+    """The page stops uploading during his reply — that IS the half-duplex rule. An
     idle timeout that counts it hands the desk the floor mid-conversation and plays
-    her answer into an empty room, which is exactly what the smoke run caught."""
+    his answer into an empty room, which is exactly what the smoke run caught."""
     source = RemoteSource(idle_timeout=5.0)
     source.submit(b"\x09\x09" * CHUNK_SAMPLES)
-    source.muted = True                               # she has started speaking
+    source.muted = True                               # he has started speaking
     source.last_seen = 0.0                            # and the reply is a long one
-    assert source.active                              # quiet BECAUSE she is speaking
+    assert source.active                              # quiet BECAUSE he is speaking
 
-    # The same silence, with her NOT speaking, does mean he has gone.
+    # The same silence, with him NOT speaking, does mean he has gone.
     quiet = RemoteSource(idle_timeout=5.0)
     quiet.submit(b"\x09\x09" * CHUNK_SAMPLES)
     quiet.last_seen = 0.0
@@ -311,17 +311,17 @@ def test_unmuting_gives_the_phone_a_fresh_window():
     assert source.active                              # judged from now, not from before
 
 
-# -- the page tells you when it cannot reach her -----------------------------
+# -- the page tells you when it cannot reach him -----------------------------
 
 
 def test_the_page_surfaces_a_lost_connection():
     """A page that silently retries looks identical to one where nothing is wrong.
     Machine asleep, home internet down, laptop lid closed mid-sentence — all the same
     from the phone, and all worth saying out loud rather than showing a dead screen."""
-    from isha.remote.page import PAGE
+    from jesse.remote.page import PAGE
 
     assert "reachable(true)" in PAGE and "reachable(false)" in PAGE
-    assert "can't reach her" in PAGE
+    assert "can't reach him" in PAGE
     # Both the polling loop and the audio upload report their own reachability, so a
     # failure on either surfaces rather than only one of them.
     assert PAGE.count("reachable(false)") >= 2
@@ -332,28 +332,28 @@ def test_the_page_surfaces_a_lost_connection():
 def test_the_page_warns_when_it_cannot_get_the_microphone():
     """Browsers refuse getUserMedia on an insecure origin. A silent mic failure is the
     worst outcome, so the page says why and how to fix it."""
-    from isha.remote.page import PAGE
+    from jesse.remote.page import PAGE
 
     assert "isSecureContext" in PAGE
     assert "will not" in PAGE and "microphone" in PAGE
-    # It points at the fix that is actually in use — Isha's own certificate, not
+    # It points at the fix that is actually in use — Jesse's own certificate, not
     # `tailscale serve`, which was declined because it publishes the machine's
     # hostname to public Certificate Transparency logs.
     assert "--remote" in PAGE and "certificate" in PAGE
 
 
 def test_the_cli_module_actually_parses():
-    """`python -m isha run --remote` shipped broken once: a mangled escape left an
+    """`python -m jesse run --remote` shipped broken once: a mangled escape left an
     unterminated f-string in __main__.py, and the whole suite stayed green because
     nothing imports it. Compiling it is cheap and closes that hole."""
     import py_compile
     from pathlib import Path
 
     for module in ("__main__.py", "factory.py", "smoke.py"):
-        py_compile.compile(str(Path("isha") / module), doraise=True)
+        py_compile.compile(str(Path("jesse") / module), doraise=True)
 
 
-# -- one Isha at a time ------------------------------------------------------
+# -- one Jesse at a time ------------------------------------------------------
 
 
 def test_a_second_instance_is_named_not_left_as_a_symptom(tmp_path):
@@ -361,9 +361,9 @@ def test_a_second_instance_is_named_not_left_as_a_symptom(tmp_path):
     less. It presented as "calibration failed twice and fell back to defaults", which
     sent us reading the calibration code, which was fine."""
     import os
-    from isha.core.single_instance import claim, release
+    from jesse.core.single_instance import claim, release
 
-    pid_file = tmp_path / "isha.pid"
+    pid_file = tmp_path / "jesse.pid"
     assert claim(pid_file) is None                  # nobody else running
     assert pid_file.read_text().strip() == str(os.getpid())
 
@@ -377,18 +377,18 @@ def test_a_second_instance_is_named_not_left_as_a_symptom(tmp_path):
 
 
 def test_a_stale_pid_file_does_not_block_a_new_session(tmp_path):
-    """A machine that lost power leaves the file behind; that must not lock her out."""
-    from isha.core.single_instance import claim
+    """A machine that lost power leaves the file behind; that must not lock his out."""
+    from jesse.core.single_instance import claim
 
-    pid_file = tmp_path / "isha.pid"
+    pid_file = tmp_path / "jesse.pid"
     pid_file.write_text("999999999", encoding="utf-8")   # long dead
     assert claim(pid_file) is None
 
 
 def test_releasing_only_removes_our_own_claim(tmp_path):
-    from isha.core.single_instance import claim, release
+    from jesse.core.single_instance import claim, release
 
-    pid_file = tmp_path / "isha.pid"
+    pid_file = tmp_path / "jesse.pid"
     claim(pid_file)
     pid_file.write_text("4242", encoding="utf-8")        # somebody else took over
     release(pid_file)
@@ -418,7 +418,7 @@ def test_lockout_reads_as_locked_not_as_a_wrong_token():
 
 def test_a_qr_is_produced_for_the_link():
     """Scanning cannot drop the ?t= tail; typing 43 characters can."""
-    from isha.remote.tls import qr_lines
+    from jesse.remote.tls import qr_lines
 
     rows = qr_lines("https://jarvis.example.ts.net:8766/?t=abc123")
     assert rows and len(rows) > 8
@@ -429,7 +429,7 @@ def test_the_qr_never_breaks_a_console_that_cannot_draw_it(monkeypatch):
     """A Windows console is cp1252 by default; printing block characters there raises,
     and a convenience must never be able to take down startup."""
     import io
-    from isha.remote import tls
+    from jesse.remote import tls
 
     monkeypatch.setattr(tls.sys, "stdout", io.TextIOWrapper(io.BytesIO(),
                                                             encoding="cp1252"))
@@ -444,7 +444,7 @@ def test_the_pairing_link_can_skip_dns(monkeypatch):
     dropped tunnel shows up as ERR_NAME_NOT_RESOLVED — which reads like a dead server
     rather than a disconnected VPN. The IP is in the certificate's SANs for exactly
     this reason, so an IP link is a complete fallback, not just a diagnostic."""
-    from isha.remote import tls
+    from jesse.remote import tls
 
     monkeypatch.setattr(tls, "tailscale_identity",
                         lambda: (["jarvis.example.ts.net", "localhost"],
@@ -456,6 +456,6 @@ def test_the_pairing_link_can_skip_dns(monkeypatch):
 
 
 def qr_lines_ok(url):
-    from isha.remote.tls import qr_lines
+    from jesse.remote.tls import qr_lines
     rows = qr_lines(url)
     return bool(rows) and all(len(r) == len(rows[0]) for r in rows)

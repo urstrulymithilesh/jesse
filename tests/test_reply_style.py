@@ -1,7 +1,7 @@
 """Tests for trim_reflexive_question — trims a reflexive trailing question that
 follows a real statement, while protecting genuine questions."""
 
-from isha.reply_style import trim_reflexive_question as trim
+from jesse.reply_style import trim_reflexive_question as trim
 
 
 def test_statement_plus_trailing_question_is_trimmed_when_rate_zero():

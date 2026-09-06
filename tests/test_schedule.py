@@ -8,9 +8,9 @@ ordinary assertions.
 
 from datetime import datetime, timedelta
 
-from isha.schedule.parse import announcement, parse_schedule_request
-from isha.schedule.scheduler import Scheduler, triage
-from isha.schedule.store import PENDING, SqliteScheduleStore
+from jesse.schedule.parse import announcement, parse_schedule_request
+from jesse.schedule.scheduler import Scheduler, triage
+from jesse.schedule.store import PENDING, SqliteScheduleStore
 
 NOW = datetime(2026, 8, 22, 14, 0, 0)          # a fixed 2:00pm for every test
 
@@ -163,9 +163,9 @@ def test_startup_reconcile_fires_what_came_due_while_closed(tmp_path):
 # -- cancel / reschedule ----------------------------------------------------
 
 
-from isha.schedule.parse import (CancelCommand, RescheduleCommand,   # noqa: E402
+from jesse.schedule.parse import (CancelCommand, RescheduleCommand,   # noqa: E402
                                  parse_schedule_command)
-from isha.schedule.scheduler import resolve_target                    # noqa: E402
+from jesse.schedule.scheduler import resolve_target                    # noqa: E402
 
 
 def test_cancel_phrasing_is_not_mistaken_for_a_new_timer():
@@ -272,7 +272,7 @@ def test_ambiguous_reschedule_also_refuses_to_guess(tmp_path):
 
 
 def test_resolve_target_rules():
-    from isha.schedule.store import ScheduledItem
+    from jesse.schedule.store import ScheduledItem
     a = ScheduledItem(1, "go to the gym", NOW, False)
     b = ScheduledItem(2, "call mum", NOW, False)
     assert resolve_target([], "") == (None, "none")
@@ -308,7 +308,7 @@ def test_a_hint_matching_several_equally_stays_ambiguous(tmp_path):
 # -- asking what's pending --------------------------------------------------
 
 
-from isha.schedule.parse import IncompleteCommand, QueryCommand   # noqa: E402
+from jesse.schedule.parse import IncompleteCommand, QueryCommand   # noqa: E402
 
 
 def test_query_phrasings_are_recognised():

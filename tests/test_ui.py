@@ -10,10 +10,10 @@ import asyncio
 import json
 import urllib.request
 
-from isha.core.state import ConversationState
-from isha.orchestrator import Orchestrator
-from isha.ui.channel import TextChannel
-from isha.ui.server import start
+from jesse.core.state import ConversationState
+from jesse.orchestrator import Orchestrator
+from jesse.ui.channel import TextChannel
+from jesse.ui.server import start
 
 from tests.test_continuous import Says
 from tests.test_orchestrator import (END, SPEECH, WAKE, STOP, FakeTransport, FakeVad,
@@ -41,9 +41,9 @@ def test_blank_input_is_ignored():
 def test_transcript_records_both_sides_with_their_source():
     c = TextChannel()
     c.log("you", "typed this", via="text")
-    c.log("isha", "said this")
+    c.log("jesse", "said this")
     snap = c.snapshot()
-    assert [l["role"] for l in snap["lines"]] == ["you", "isha"]
+    assert [l["role"] for l in snap["lines"]] == ["you", "jesse"]
     assert snap["lines"][0]["via"] == "text"
     assert snap["lines"][1]["via"] == "voice"
 
@@ -52,7 +52,7 @@ def test_snapshot_since_returns_only_new_lines():
     c = TextChannel()
     c.log("you", "one")
     first = c.snapshot()
-    c.log("isha", "two")
+    c.log("jesse", "two")
     later = c.snapshot(first["total"])
     assert [l["text"] for l in later["lines"]] == ["two"]
 
@@ -78,7 +78,7 @@ def test_the_server_serves_the_page_and_round_trips_a_message():
 
     with urllib.request.urlopen(url, timeout=5) as r:
         page = r.read().decode()
-    assert "<title>Isha</title>" in page
+    assert "<title>Jesse</title>" in page
     assert "background:#000" in page and "color:#fff" in page   # black bg, white text
 
     req = urllib.request.Request(
@@ -88,7 +88,7 @@ def test_the_server_serves_the_page_and_round_trips_a_message():
         assert json.load(r)["ok"] is True
     assert c.take() == "typed hello"
 
-    c.log("isha", "spoken reply")
+    c.log("jesse", "spoken reply")
     assert _get(url + "/events?since=0")["lines"][0]["text"] == "spoken reply"
 
 
@@ -115,7 +115,7 @@ def test_typed_input_runs_a_full_turn_through_the_same_pipeline():
         await orch._turn_task
 
     asyncio.run(scenario())
-    assert transport.spoken == ["Typed reply."]          # she actually replied
+    assert transport.spoken == ["Typed reply."]          # he actually replied
     assert [m.content for m in orch._history if m.role == "user"] == ["what is my name"]
 
 
@@ -132,7 +132,7 @@ def test_a_typed_turn_appears_in_the_transcript_with_her_reply():
     lines = c.snapshot()["lines"]
     assert lines[0]["role"] == "you" and lines[0]["via"] == "text"
     assert lines[0]["text"] == "hello there"
-    assert any(l["role"] == "isha" and l["text"] == "Typed reply." for l in lines)
+    assert any(l["role"] == "jesse" and l["text"] == "Typed reply." for l in lines)
 
 
 def test_a_spoken_turn_lands_in_the_same_transcript():
@@ -149,14 +149,14 @@ def test_a_spoken_turn_lands_in_the_same_transcript():
     asyncio.run(scenario())
     lines = c.snapshot()["lines"]
     assert lines[0]["via"] == "voice", "a spoken turn must be marked as voice"
-    assert any(l["role"] == "isha" for l in lines)
+    assert any(l["role"] == "jesse" for l in lines)
 
 
 def test_typing_is_ignored_mid_turn_so_a_live_reply_is_not_cut_off():
     c = TextChannel()
     orch, _t = _orch(c)
     orch._enter(ConversationState.SPEAKING)
-    c.submit("typed while she talks")
+    c.submit("typed while he talks")
     asyncio.run(orch._handle_frame(b"quiet"))
     assert orch._turn_task is None               # not started mid-reply
-    assert c.take() == "typed while she talks"   # still queued, not lost
+    assert c.take() == "typed while he talks"   # still queued, not lost

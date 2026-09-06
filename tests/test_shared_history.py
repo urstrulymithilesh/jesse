@@ -2,7 +2,7 @@
 
 Measured before this existed: 5 of 5 broad questions invented a shared past — lazy
 Sundays, walks, a yellow sweater, spilled coffee. None of it happened. The invented
-details were her own persona tastes (rain, grey afternoons, pineapple, teasing)
+details were his own persona tastes (rain, grey afternoons, pineapple, teasing)
 replayed as autobiography, which is what made it structural rather than a model
 ceiling: specific questions ground correctly because they retrieve a matching fact,
 broad ones retrieve nothing and leave the model free-associating from the persona.
@@ -10,9 +10,9 @@ broad ones retrieve nothing and leave the model free-associating from the person
 Inventing intimacy is worse than getting a fact wrong, so the guard is deterministic.
 """
 
-from isha.context import shared_history_context
-from isha.core.interfaces import Fact
-from isha.orchestrator import _asks_about_shared_history
+from jesse.context import shared_history_context
+from jesse.core.interfaces import Fact
+from jesse.orchestrator import _asks_about_shared_history
 
 
 def test_detects_broad_questions_about_the_relationship():
@@ -58,9 +58,9 @@ def test_the_anchor_excludes_facts_about_her_own_build():
     facts = [
         Fact(text="the user's favourite colour is black", confidence=1.0,
              subject="colour", origin="conversation"),
-        Fact(text="Isha runs on a local language model", confidence=1.0,
+        Fact(text="Jesse runs on a local language model", confidence=1.0,
              subject="self: tech", origin="self"),
-        Fact(text="Isha used to sound robotic", confidence=1.0,
+        Fact(text="Jesse used to sound robotic", confidence=1.0,
              subject="self-history: v0", origin="self_history"),
     ]
     content = shared_history_context(facts).content
@@ -76,7 +76,7 @@ def test_with_nothing_stored_she_is_told_to_say_so():
 
 
 def test_the_anchor_names_the_persona_leak_explicitly():
-    """The fabrications were her own tastes replayed as shared history, so the block
+    """The fabrications were his own tastes replayed as shared history, so the block
     has to forbid exactly that, not just 'don't lie'."""
     content = shared_history_context(
         [Fact(text="the user likes tea", confidence=1.0, subject="drink")]).content

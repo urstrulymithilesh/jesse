@@ -7,7 +7,7 @@ These pin the two guards that stop sentences from being cut apart:
 
 import array
 
-from isha.audio.vad import EnergyVad
+from jesse.audio.vad import EnergyVad
 
 
 def _frame(value: int, n: int = 160) -> bytes:

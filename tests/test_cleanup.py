@@ -8,7 +8,7 @@ extractor a poisoned string.
 
 import pytest
 
-from isha.stt.cleanup import strip_wake_prefix
+from jesse.stt.cleanup import strip_wake_prefix
 
 WAKE = "hey_jarvis"
 
@@ -47,7 +47,7 @@ def test_adapts_to_a_different_wake_model():
 
 def test_whisper_mishearings_of_hey_before_the_wake_token_are_stripped():
     """Live smoke run: "hey jarvis" came back as "8 Jarvis", the junk survived, the
-    action parser missed, and she claimed "Photoshop opens." about nothing."""
+    action parser missed, and he claimed "Photoshop opens." about nothing."""
     assert strip_wake_prefix("8 Jarvis Open Photoshop", "hey_jarvis") == "Open Photoshop"
     assert strip_wake_prefix("A Jarvis, set a timer", "hey_jarvis") == "set a timer"
     assert strip_wake_prefix("They Jarvis, hello", "hey_jarvis") == "hello"

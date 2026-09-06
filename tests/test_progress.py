@@ -1,12 +1,12 @@
 """Tests for the progress log + the self-state context it drives.
 
-Pure logic — no db, no LLM, no mic. The key behavior: she only sounds "more alive"
-when the newest entry was a REAL capability change (significant=True); otherwise she
+Pure logic — no db, no LLM, no mic. The key behavior: he only sounds "more alive"
+when the newest entry was a REAL capability change (significant=True); otherwise he
 reports being about the same.
 """
 
-from isha.context import self_state_context
-from isha.memory.progress import (
+from jesse.context import self_state_context
+from jesse.memory.progress import (
     PROGRESS_LOG,
     ProgressEntry,
     latest,
@@ -14,16 +14,16 @@ from isha.memory.progress import (
     significant_count,
 )
 
-SIG = ProgressEntry("v9 — big", "2026-01-02", "she gained a whole new sense", True)
+SIG = ProgressEntry("v9 — big", "2026-01-02", "he gained a whole new sense", True)
 MINOR = ProgressEntry("v9.1 — tweak", "2026-01-03", "a small wording fix", False)
-OLD = ProgressEntry("v8 — before", "2026-01-01", "she was simpler then", True)
+OLD = ProgressEntry("v8 — before", "2026-01-01", "he was simpler then", True)
 
 
 # -- log shape --------------------------------------------------------------
 
 
 def test_log_is_ordered_newest_last_and_nonempty():
-    assert PROGRESS_LOG, "progress log should be backfilled with her real history"
+    assert PROGRESS_LOG, "progress log should be backfilled with his real history"
     assert latest() is PROGRESS_LOG[-1]
     assert previous() is PROGRESS_LOG[-2]
     dates = [e.date for e in PROGRESS_LOG]
@@ -34,7 +34,7 @@ def test_significant_count_counts_only_real_changes():
     assert significant_count() == sum(1 for e in PROGRESS_LOG if e.significant)
 
 
-# -- mood: the significant flag drives how she feels -------------------------
+# -- mood: the significant flag drives how he feels -------------------------
 
 
 def _mood(msg) -> str:
@@ -60,7 +60,7 @@ def test_self_state_includes_version_summary_and_previous():
     msg = self_state_context(SIG, OLD)
     assert "v9 — big" in msg.content
     assert "whole new sense" in msg.content
-    assert "v8 — before" in msg.content        # she can contrast with her past
+    assert "v8 — before" in msg.content        # he can contrast with his past
 
 
 def test_self_state_handles_no_previous_entry():
@@ -73,7 +73,7 @@ def test_no_progress_yet_means_no_self_state_block():
 
 
 def test_self_state_invites_offering_the_reason():
-    # behavior 4: she should be told she can offer to explain WHY she feels this way
+    # behavior 4: he should be told he can offer to explain WHY he feels this way
     msg = self_state_context(SIG, OLD)
     assert "WHY" in msg.content or "why" in msg.content
 
@@ -82,7 +82,7 @@ def test_self_state_invites_offering_the_reason():
 
 
 def test_asks_about_self_detects_state_questions():
-    from isha.orchestrator import _asks_about_self
+    from jesse.orchestrator import _asks_about_self
     for q in ["how are you feeling?", "how are you?", "what can you do",
               "what's your current version", "who are you", "how were you before"]:
         assert _asks_about_self(q), q
@@ -91,7 +91,7 @@ def test_asks_about_self_detects_state_questions():
 
 
 def test_asks_what_next_detects_next_step_questions():
-    from isha.orchestrator import _asks_what_next
+    from jesse.orchestrator import _asks_what_next
     for q in ["what should I do next?", "what's next", "what should I work on",
               "where do I start"]:
         assert _asks_what_next(q), q
@@ -100,7 +100,7 @@ def test_asks_what_next_detects_next_step_questions():
 
 
 def test_next_step_nudge_forbids_listing_options():
-    from isha.context import next_step_nudge
+    from jesse.context import next_step_nudge
     c = next_step_nudge().content
     assert "boss" in c and "not list" in c.lower()
 

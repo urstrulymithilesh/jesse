@@ -12,10 +12,10 @@ from __future__ import annotations
 import asyncio
 import time
 
-from isha.core.interfaces import LLMError
-from isha.core.state import ConversationState
-from isha.orchestrator import Orchestrator
-from isha.tts.sentences import split_complete_sentences
+from jesse.core.interfaces import LLMError
+from jesse.core.state import ConversationState
+from jesse.orchestrator import Orchestrator
+from jesse.tts.sentences import split_complete_sentences
 
 from tests.test_orchestrator import (END, SPEECH, STOP, WAKE, FakeTransport, FakeVad,
                                      FakeWake, TextSynth)
@@ -122,7 +122,7 @@ def test_speaking_starts_before_generation_finishes():
     llm.orch = orch
     asyncio.run(orch._think_and_speak([]))
 
-    assert "spoke_first_at" in progress, "she never started speaking mid-generation"
+    assert "spoke_first_at" in progress, "he never started speaking mid-generation"
     assert progress["spoke_first_at"] < llm.tokens_emitted, \
         "speaking only began after every token — that is not streaming"
 
@@ -157,7 +157,7 @@ def test_an_all_question_reply_is_never_gutted():
 
 
 def test_interrupt_before_any_sentence_lands_speaks_nothing():
-    """He cuts in while she is still forming the first sentence.
+    """He cuts in while he is still forming the first sentence.
 
     (A stale interrupt from the PREVIOUS reply can't do this — _think_and_speak
     clears the flag on entry, or one barge-in would mute every reply after it.)
@@ -173,7 +173,7 @@ def test_interrupt_before_any_sentence_lands_speaks_nothing():
 
 
 def test_interrupt_mid_reply_keeps_what_was_already_said():
-    """Interrupt arrives while she is speaking; earlier sentences stand, later ones stop."""
+    """Interrupt arrives while he is speaking; earlier sentences stand, later ones stop."""
     llm = ScriptedLLM("One. Two. Three. Four. Five. Six. Seven.")
     orch, transport = _orch(llm)
 
@@ -294,9 +294,9 @@ def test_the_wake_word_still_fires_right_after_a_reply():
     async def scenario():
         orch._enter(ConversationState.SPEAKING)
         for _ in range(10):                       # a long reply plays
-            await orch._handle_frame(b"her voice")
+            await orch._handle_frame(b"his voice")
         orch._enter(ConversationState.IDLE)
-        await orch._handle_frame(WAKE)            # he wakes her immediately after
+        await orch._handle_frame(WAKE)            # he wakes his immediately after
 
     asyncio.run(scenario())
     assert orch.state is ConversationState.LISTENING, \
@@ -304,8 +304,8 @@ def test_the_wake_word_still_fires_right_after_a_reply():
 
 
 def test_a_barge_in_ends_the_turn_listening_not_idle():
-    """He said the wake word to cut her off; that word is spent. Going idle would
-    make him say it twice before she heard what he interrupted her to say."""
+    """He said the wake word to cut him off; that word is spent. Going idle would
+    make his say it twice before he heard what he interrupted his to say."""
     orch, transport = _orch(ScriptedLLM("One. Two. Three. Four."))
 
     original = orch._speak_sentence
@@ -338,7 +338,7 @@ def test_the_stop_word_sets_barge_in_only_once():
 
 def test_a_wake_with_no_speech_gives_up_instead_of_listening_forever():
     """A false wake used to hang in LISTENING permanently — the VAD can't end a turn
-    that never started, so from outside she looked dead."""
+    that never started, so from outside he looked dead."""
     orch, _t = _orch(ScriptedLLM("x."))
     orch._listen_timeout_frames = 3
     orch._continuous_timeout_frames = 3      # engaged by the wake; both windows short here
@@ -355,7 +355,7 @@ def test_a_wake_with_no_speech_gives_up_instead_of_listening_forever():
             await orch._handle_frame(b"silence")
 
     asyncio.run(scenario())
-    assert orch.state is ConversationState.IDLE, "she should have gone back to sleep"
+    assert orch.state is ConversationState.IDLE, "he should have gone back to sleep"
 
 
 def test_each_sentence_is_printed_as_it_starts_playing(capsys):

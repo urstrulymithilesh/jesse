@@ -1,4 +1,4 @@
-"""Isha audio diagnostics — find where the wake->STT chain breaks.
+"""Jesse audio diagnostics — find where the wake->STT chain breaks.
 
 Two commands:
 
@@ -14,7 +14,7 @@ The live monitor shows, per 80ms frame, all in one line:
   * [SPEECH] when level clears the VAD threshold, and <<< WAKE when the word fires
 
 If the VU meter stays flat while you talk, it's the wrong device -> pick the right
-index and pass it to `python -m isha run --device N`.
+index and pass it to `python -m jesse run --device N`.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import sys
 import numpy as np
 import sounddevice as sd
 
-from isha.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
+from jesse.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
 
 WAKE_THRESHOLD = 0.5
 
@@ -37,7 +37,7 @@ WAKE_THRESHOLD = 0.5
 
 
 def list_devices(inputs_only: bool = False) -> None:
-    from isha.audio.devices import format_device_table
+    from jesse.audio.devices import format_device_table
 
     title = "AUDIO INPUT DEVICES" if inputs_only else "AUDIO DEVICES  (cap = IN / OUT / IN+OUT)"
     print("=" * 94)
@@ -75,7 +75,7 @@ def _vu(rms: float, width: int = 40, full_scale: float = 3000.0) -> str:
 
 
 def listen(device: int | None, threshold: float, gain: float = 1.0) -> None:
-    from isha.audio.devices import DeviceError, format_device_table, validate_input_device
+    from jesse.audio.devices import DeviceError, format_device_table, validate_input_device
 
     print("=" * 78)
     print(" LIVE MONITOR — talk into your mic; Ctrl-C to stop")
@@ -129,7 +129,7 @@ def listen(device: int | None, threshold: float, gain: float = 1.0) -> None:
 
 
 def _parse_listen_args(args: list[str]) -> tuple[int | None, float, float]:
-    from isha.config import CONFIG
+    from jesse.config import CONFIG
 
     device: int | None = None
     threshold = CONFIG.audio.vad_threshold
@@ -148,8 +148,8 @@ def _parse_listen_args(args: list[str]) -> tuple[int | None, float, float]:
 
 
 def _calibrate(args: list[str]) -> None:
-    from isha.audio.calibrate import calibrate
-    from isha.audio.devices import DeviceError, validate_input_device
+    from jesse.audio.calibrate import calibrate
+    from jesse.audio.devices import DeviceError, validate_input_device
 
     device = int(args[0]) if args and args[0].lstrip("-").isdigit() else None
     try:
@@ -160,7 +160,7 @@ def _calibrate(args: list[str]) -> None:
         return
     print(f"\n  Confirm it works together:  python diagnose.py listen "
           f"{device if device is not None else ''} --gain {result.gain} --threshold {result.threshold}")
-    print("  Make permanent in isha/config.py -> AudioConfig:")
+    print("  Make permanent in jesse/config.py -> AudioConfig:")
     print(f"      capture_gain: float = {result.gain}")
     print(f"      vad_threshold: float = {result.threshold}")
 

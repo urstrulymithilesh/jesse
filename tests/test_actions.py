@@ -5,9 +5,9 @@ The orchestrator wiring is covered at the end with fakes, the same way the sched
 
 import pytest
 
-from isha.actions.parse import (FindCommand, MediaCommand, OpenCommand, UnknownTarget,
+from jesse.actions.parse import (FindCommand, MediaCommand, OpenCommand, UnknownTarget,
                                 parse_action_command)
-from isha.actions.run import find_files
+from jesse.actions.run import find_files
 
 APPS = {"spotify": "spotify:", "chrome": "chrome", "downloads": r"C:\Users\x\Downloads"}
 
@@ -50,7 +50,7 @@ def test_soft_open_verbs(said):
     "put on a jumper",
 ])
 def test_soft_open_verbs_never_claim_an_unknown_target(said):
-    """Unlike "open X", these only mean "start this" when X is something she has. She
+    """Unlike "open X", these only mean "start this" when X is something he has. He
     must not answer "I can't open a coffee"."""
     assert parse(said) is None
 
@@ -66,7 +66,7 @@ def test_trailing_filler_does_not_break_the_lookup(said, name):
 
 
 def test_unknown_app_is_a_command_not_a_shrug():
-    """Falling through to chat would have her agree she opened something she can't."""
+    """Falling through to chat would have his agree he opened something he can't."""
     cmd = parse("open Photoshop")
     assert isinstance(cmd, UnknownTarget) and cmd.name == "photoshop"
 
@@ -126,7 +126,7 @@ def test_find_out_is_a_question_not_a_search():
 ])
 def test_abstract_nouns_are_not_a_file_search(said):
     """"find some time for me" reduced to "time" and became a file search in a live
-    probe. Harmless in effect — she finds nothing — but it is the wrong branch, and
+    probe. Harmless in effect — he finds nothing — but it is the wrong branch, and
     wrong branches are how a feature stops being trusted."""
     assert parse(said) is None
 
@@ -198,16 +198,16 @@ def test_find_files_survives_a_missing_root(tmp_path):
     assert find_files("anything", [tmp_path / "not there"]) == []
 
 
-# -- what she is told to say ------------------------------------------------
+# -- what he is told to say ------------------------------------------------
 #
 # The note handed to the model is the whole safety story for this feature: if it says
-# "you opened it" when nothing opened, she says it too, and he stops checking.
+# "you opened it" when nothing opened, he says it too, and he stops checking.
 
 import asyncio
 
-from isha.actions.run import ActionError
-from isha.llm.echo import EchoLLM
-from isha.orchestrator import Orchestrator
+from jesse.actions.run import ActionError
+from jesse.llm.echo import EchoLLM
+from jesse.orchestrator import Orchestrator
 
 
 class _Silence:
@@ -241,7 +241,7 @@ def _orch():
 
 
 def _note(text, monkeypatch, **patches):
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
     for name, fn in patches.items():
         monkeypatch.setattr(o, name, fn)
     return asyncio.run(_orch()._handle_action_command(text))

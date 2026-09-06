@@ -1,15 +1,15 @@
 """Episodic memory: time windows, the append-only record, and the anchor.
 
 Episodes are EVENTS, not slots. The hard requirement carried over from the
-shared-history fix: asked about a time with nothing stored, she must say so rather
+shared-history fix: asked about a time with nothing stored, he must say so rather
 than invent a conversation for it.
 """
 
 from datetime import datetime, timedelta
 
-from isha.context import episode_context
-from isha.memory.episodes import Episode, EpisodeStore, Summariser
-from isha.memory.temporal import (TimeWindow, is_conversation_question,
+from jesse.context import episode_context
+from jesse.memory.episodes import Episode, EpisodeStore, Summariser
+from jesse.memory.temporal import (TimeWindow, is_conversation_question,
                                   parse_temporal_query, parse_time_window)
 
 NOW = datetime(2026, 8, 22, 14, 0, 0)          # a Saturday, 2pm
@@ -23,7 +23,7 @@ class FakeEmbedder:
 class FakeLLM:
     supports_tools = False
 
-    def __init__(self, reply="They talked about his car and she teased him."):
+    def __init__(self, reply="They talked about his car and he teased him."):
         self.reply = reply
         self.seen = None
 
@@ -76,7 +76,7 @@ def test_conversation_questions_are_recognised():
 
 
 def test_a_statement_that_merely_mentions_a_day_is_not_a_query():
-    """"I went to the gym yesterday" is him telling her something, not asking."""
+    """"I went to the gym yesterday" is his telling his something, not asking."""
     assert parse_temporal_query("I went to the gym yesterday", now=NOW) is None
     assert parse_temporal_query("I have a meeting on tuesday", now=NOW) is None
 
@@ -142,7 +142,7 @@ def test_summariser_builds_a_transcript_and_returns_prose():
     assert out == llm.reply
     transcript = llm.seen[-1].content
     assert "Mithilesh: my car is light" in transcript
-    assert "Isha: sounds nippy" in transcript
+    assert "Jesse: sounds nippy" in transcript
 
 
 # -- the anchor (confabulation guard) ---------------------------------------
@@ -157,7 +157,7 @@ def test_nothing_stored_for_that_time_means_say_so():
 
 
 def test_real_episodes_are_listed_and_nothing_may_be_added():
-    ep = Episode(1, "They talked about his car and she teased him about the upgrade.",
+    ep = Episode(1, "They talked about his car and he teased him about the upgrade.",
                  NOW, NOW, 4)
     msg = episode_context([ep], "yesterday", now=NOW + timedelta(days=1))
     assert "teased him about the upgrade" in msg.content

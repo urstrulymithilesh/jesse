@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import asyncio
 
-from isha.audio.vad import Vad
-from isha.core.interfaces import Fact, LLMError
-from isha.core.state import ConversationState
-from isha.llm.echo import EchoLLM
-from isha.orchestrator import Orchestrator
+from jesse.audio.vad import Vad
+from jesse.core.interfaces import Fact, LLMError
+from jesse.core.state import ConversationState
+from jesse.llm.echo import EchoLLM
+from jesse.orchestrator import Orchestrator
 
 WAKE, SPEECH, END, STOP = b"WAKE", b"speech", b"END", b"STOP"
 
@@ -127,8 +127,8 @@ def test_happy_path_full_loop():
     for expected in (ConversationState.LISTENING, ConversationState.THINKING,
                      ConversationState.SPEAKING):
         assert expected in seq
-    # Continuous mode: the wake engaged her, so the turn ends LISTENING for a
-    # follow-up rather than making him say the wake word again.
+    # Continuous mode: the wake engaged his, so the turn ends LISTENING for a
+    # follow-up rather than making his say the wake word again.
     assert orch.state is ConversationState.LISTENING
     assert orch._engaged
     assert transport.spoken == ["I heard you say: hello world"]
@@ -313,8 +313,8 @@ def test_extraction_skipped_when_a_turn_is_actively_running():
 
 
 def test_extraction_still_runs_while_merely_listening():
-    """Continuous mode keeps her LISTENING between turns. Gating extraction on IDLE
-    meant it never ran again once she stopped idling."""
+    """Continuous mode keeps his LISTENING between turns. Gating extraction on IDLE
+    meant it never ran again once he stopped idling."""
     orch, _t, store, extractor = _build_mem([])
     orch._enter(ConversationState.LISTENING)  # waiting to hear, not mid-turn
     asyncio.run(orch._extract_facts("The user said: hi\nYou replied: hey"))
@@ -338,7 +338,7 @@ def test_recalled_fact_reaches_the_llm_context():
 
 
 def test_asks_about_past_detects_history_questions():
-    from isha.orchestrator import _asks_about_past
+    from jesse.orchestrator import _asks_about_past
     assert _asks_about_past("how were you before?")
     assert _asks_about_past("what did you used to be like")
     assert _asks_about_past("you've come a long way, huh")
@@ -491,14 +491,14 @@ def test_ordinary_talk_schedules_nothing():
 
 
 def test_a_fired_reminder_never_cuts_the_user_off_mid_sentence():
-    """Preemption rule: notify() during LISTENING is held until she's back at IDLE."""
+    """Preemption rule: notify() during LISTENING is held until he's back at IDLE."""
     orch, transport, _s = _sched_orch("hello there")
 
     async def scenario():
         await orch._handle_frame(WAKE)        # -> LISTENING (he starts talking)
         orch.notify("your timer is up")       # reminder fires mid-utterance
         await orch._handle_frame(SPEECH)
-        assert transport.spoken == []         # did NOT talk over him
+        assert transport.spoken == []         # did NOT talk over his
         await orch._handle_frame(END)
         await orch._turn_task
 
@@ -509,7 +509,7 @@ def test_a_fired_reminder_never_cuts_the_user_off_mid_sentence():
 
 
 def test_asking_about_timers_reports_them_and_creates_nothing():
-    """The query path must never schedule — and must tell her the real list."""
+    """The query path must never schedule — and must tell him the real list."""
     from datetime import datetime, timedelta
 
     class QueryScheduler(FakeScheduler):
@@ -536,7 +536,7 @@ def test_asking_about_timers_reports_them_and_creates_nothing():
 
     assert sched.added == []                       # a question creates nothing
     hint = " ".join(m.content for m in llm.last_messages if m.role == "system")
-    assert "go to the gym" in hint                 # she was handed the real pending item
+    assert "go to the gym" in hint                 # he was handed the real pending item
 
 
 def test_asking_with_nothing_pending_says_none():

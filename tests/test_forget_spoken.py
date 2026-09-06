@@ -1,6 +1,6 @@
 """Spoken "forget that" must actually delete.
 
-She used to agree out loud — "sure, I'll forget that" — while the fact stayed in the
+He used to agree out loud — "sure, I'll forget that" — while the fact stayed in the
 database. Agreeing without acting is worse than refusing, because you stop checking.
 Deletion is destructive, so this mirrors reminder cancellation: act on one clear
 match, ask when several fit, say so when nothing does, never guess.
@@ -8,9 +8,9 @@ match, ask when several fit, say so when nothing does, never guess.
 
 import asyncio
 
-from isha.core.interfaces import Fact
-from isha.memory.forget_parse import ForgetCommand, parse_forget_command
-from isha.memory.store import SqliteMemoryStore
+from jesse.core.interfaces import Fact
+from jesse.memory.forget_parse import ForgetCommand, parse_forget_command
+from jesse.memory.store import SqliteMemoryStore
 
 from tests.test_memory import FakeEmbedder
 
@@ -78,7 +78,7 @@ class _Orch:
     """Just enough orchestrator to exercise _handle_forget_command."""
 
     def __init__(self, store):
-        from isha.orchestrator import Orchestrator
+        from jesse.orchestrator import Orchestrator
         self.store = store
         self._handle = Orchestrator._handle_forget_command.__get__(self)
 

@@ -5,9 +5,9 @@ in-memory (or tmp-file) SQLite — no fastembed model, no mic, no LLM.
 
 import zlib
 
-from isha.core.interfaces import Fact, Message
-from isha.memory.extraction import parse_extracted_facts
-from isha.memory.store import SqliteMemoryStore
+from jesse.core.interfaces import Fact, Message
+from jesse.memory.extraction import parse_extracted_facts
+from jesse.memory.store import SqliteMemoryStore
 
 
 IDENTITY_DIMS = 16
@@ -176,7 +176,7 @@ def test_parse_tolerates_code_fence():
 
 
 def test_parse_drops_her_own_speech_and_questions():
-    """Live db junk: three of nine learned facts were Isha's own lines, filed as facts
+    """Live db junk: three of nine learned facts were Jesse's own lines, filed as facts
     about him. The prompt already forbids it; the model does it anyway."""
     raw = ("[{\"subject\":\"practicing\",\"text\":\"I'll start practicing the Indian accent.\",\"confidence\":0.9},"
            "{\"subject\":\"mood\",\"text\":\"I'm energized, though.\",\"confidence\":0.6},"
@@ -190,7 +190,7 @@ def test_parse_drops_her_own_speech_and_questions():
 
 def test_parse_keeps_facts_that_merely_contain_i_or_a_question_mark():
     """Only the SHAPE is rejected — first word, or a trailing '?'. A real fact that
-    happens to quote him must survive."""
+    happens to quote his must survive."""
     raw = ('[{"subject":"job","text":"the user said I should ask about his job","confidence":0.9},'
            "{\"subject\":\"band\",\"text\":\"the user's favourite band is Wire\",\"confidence\":0.9}]")
     assert len(parse_extracted_facts(raw)) == 2
@@ -212,15 +212,15 @@ def test_conversational_extraction_cannot_overwrite_a_core_fact():
 
 def test_seeding_can_update_a_protected_fact():
     s = _store()
-    s.add_fact(Fact(text="Isha is at build v1", confidence=1.0, subject="self: version", origin="self"))
-    s.add_fact(Fact(text="Isha is at build v2", confidence=1.0, subject="self: version", origin="self"))
+    s.add_fact(Fact(text="Jesse is at build v1", confidence=1.0, subject="self: version", origin="self"))
+    s.add_fact(Fact(text="Jesse is at build v2", confidence=1.0, subject="self: version", origin="self"))
     facts = s.all_facts()
     assert len(facts) == 1 and "v2" in facts[0].text  # seed origin updates itself
 
 
 def test_self_history_hidden_unless_explicitly_requested():
     s = _store()
-    s.add_fact(Fact(text="Isha used to sound robotic", confidence=1.0,
+    s.add_fact(Fact(text="Jesse used to sound robotic", confidence=1.0,
                     subject="self-history: v0", origin="self_history"))
     assert s.recall("tell me about your old voice", k=3) == []          # hidden by default
     hits = s.recall("tell me about your old voice", k=3, include_history=True)
@@ -228,21 +228,21 @@ def test_self_history_hidden_unless_explicitly_requested():
 
 
 def test_seed_plants_protected_facts_and_is_idempotent():
-    from isha.memory.seed import seed, seed_if_needed
+    from jesse.memory.seed import seed, seed_if_needed
     s = _store()
     assert seed(s) > 0
-    assert any(f.origin == "core" and "Isha" in f.text for f in s.all_facts())
+    assert any(f.origin == "core" and "Jesse" in f.text for f in s.all_facts())
     assert seed_if_needed(s) == 0  # unchanged content -> no-op
 
 
 def test_edited_seed_content_reaches_an_already_seeded_db():
     """The old gate was "any core facts?", so editing seed.py did nothing to a live db.
-    She kept calling herself a companion and naming a model she no longer ran on."""
-    from isha.memory import seed as seed_mod
+    He kept calling himself a companion and naming a model he no longer ran on."""
+    from jesse.memory import seed as seed_mod
     s = _store()
     seed_mod.seed(s)
     original = seed_mod.CORE_FACTS[0]
-    seed_mod.CORE_FACTS[0] = Fact(subject=original.subject, text="the AI partner's name is Isha, v2",
+    seed_mod.CORE_FACTS[0] = Fact(subject=original.subject, text="the AI partner's name is Jesse, v2",
                                   confidence=1.0, origin="core")
     try:
         assert seed_mod.seed_if_needed(s) > 0
@@ -412,7 +412,7 @@ def test_forget_clears_the_subject_vector_too():
     assert left == 0
 
 
-# -- retroactive dedupe (isha memory --dedupe) ------------------------------
+# -- retroactive dedupe (jesse memory --dedupe) ------------------------------
 
 
 def test_dedupe_preview_finds_a_real_duplicate_and_changes_nothing():
@@ -462,9 +462,9 @@ def test_two_seeded_facts_are_never_merged_into_each_other():
     """The bug this rule exists for: "isha's creator" and "isha's name" score 0.885,
     over the threshold, and seeding silently lost "isha's name"."""
     s = _dedupe_store([("isha's creator", "isha's name")])   # forced to look identical
-    s.add_fact(Fact(text="Isha was created by Mithilesh", confidence=1.0,
+    s.add_fact(Fact(text="Jesse was created by Mithilesh", confidence=1.0,
                     subject="isha's creator", origin="core"))
-    s.add_fact(Fact(text="the AI partner's name is Isha", confidence=1.0,
+    s.add_fact(Fact(text="the AI partner's name is Jesse", confidence=1.0,
                     subject="isha's name", origin="core"))
 
     assert len(s.all_facts()) == 2, "two seeded facts must never collapse"
@@ -473,7 +473,7 @@ def test_two_seeded_facts_are_never_merged_into_each_other():
 
 
 def test_seeding_twice_keeps_every_seeded_fact():
-    from isha.memory.seed import all_seed_facts, seed
+    from jesse.memory.seed import all_seed_facts, seed
     s = _dedupe_store([])
     seed(s)
     seed(s)

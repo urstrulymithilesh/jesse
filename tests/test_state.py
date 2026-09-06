@@ -5,7 +5,7 @@ hardest, scariest part of the system is 100% testable with zero mocks, zero
 hardware, zero models. These tests run today.
 """
 
-from isha.core.state import AlertDisposition, ConversationState, disposition_for
+from jesse.core.state import AlertDisposition, ConversationState, disposition_for
 
 
 def test_alert_while_user_speaking_waits_for_silence():
@@ -22,7 +22,7 @@ def test_alert_while_idle_speaks_now():
 
 
 def test_alert_while_speaking_speaks_now():
-    # Isha already owns the speaker; a fired timer can interject immediately.
+    # Jesse already owns the speaker; a fired timer can interject immediately.
     assert disposition_for(ConversationState.SPEAKING) is AlertDisposition.SPEAK_NOW
 
 

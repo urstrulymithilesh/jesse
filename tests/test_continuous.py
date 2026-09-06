@@ -1,6 +1,6 @@
 """Continuous conversation: wake once, talk freely, stand down on request.
 
-The spec says she is always listening by default and goes quiet only when told. She
+The spec says he is always listening by default and goes quiet only when told. He
 used to demand the wake word every single turn.
 """
 
@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import asyncio
 
-from isha.core.state import ConversationState
-from isha.orchestrator import Orchestrator, _asks_to_go_quiet
+from jesse.core.state import ConversationState
+from jesse.orchestrator import Orchestrator, _asks_to_go_quiet
 
 from tests.test_orchestrator import (END, SPEECH, STOP, WAKE, FakeTransport, FakeVad,
                                      FakeWake, TextSynth)
@@ -98,7 +98,7 @@ def test_after_going_quiet_speech_alone_does_nothing():
     orch, transport = _orch([WAKE, SPEECH, END, SPEECH, END],
                             transcriber=Says("stop listening"))
     asyncio.run(orch.run())
-    # She said goodbye to the first turn; the later speech must NOT start a turn.
+    # He said goodbye to the first turn; the later speech must NOT start a turn.
     assert len(transport.spoken) == 1
     assert orch.state is ConversationState.IDLE
 
@@ -120,13 +120,13 @@ def test_a_new_wake_word_re_engages_her():
 
 
 def test_engaged_uses_the_long_window_not_the_short_one():
-    """A pause mid-conversation is normal; 8 seconds would drop her out constantly."""
+    """A pause mid-conversation is normal; 8 seconds would drop his out constantly."""
     orch, _t = _orch([])
     orch._listen_timeout_frames = 2
     orch._continuous_timeout_frames = 50
 
     async def scenario():
-        await orch._handle_frame(WAKE)            # engages her
+        await orch._handle_frame(WAKE)            # engages his
         for _ in range(10):                       # well past the SHORT window
             await orch._handle_frame(b"quiet")
 

@@ -1,16 +1,16 @@
-"""Proactive daily learning: feed parsing, the store, the trigger, and what she's told.
+"""Proactive daily learning: feed parsing, the store, the trigger, and what he's told.
 
 No network anywhere — feeds are bytes fixtures. The live path (a real fetch) is covered
 by the smoke harness and by hand; what is pinned here is everything that decides whether
-she speaks, and whether what she says is true.
+he speaks, and whether what he says is true.
 """
 
 import pytest
 
-from isha.context import digest_context
-from isha.digest.feeds import FeedError, Item, parse_feed, strip_html
-from isha.digest.parse import asks_whats_new
-from isha.digest.store import DigestStore
+from jesse.context import digest_context
+from jesse.digest.feeds import FeedError, Item, parse_feed, strip_html
+from jesse.digest.parse import asks_whats_new
+from jesse.digest.store import DigestStore
 
 RSS = b"""<?xml version="1.0"?>
 <rss version="2.0"><channel>
@@ -170,7 +170,7 @@ def test_naming_a_source_narrows_to_it():
 ])
 def test_his_own_life_is_not_a_digest_question(said):
     """Measured: without these guards the trigger fired on 2 of 12 held-out his-life
-    utterances. She could only answer them from what he told her."""
+    utterances. He could only answer them from what he told his."""
     assert asks_whats_new(said, SOURCES) is None
 
 
@@ -191,7 +191,7 @@ def test_ordinary_talk_does_not_ask_for_a_digest(said):
     assert asks_whats_new(said, SOURCES) is None
 
 
-# -- what she is told -------------------------------------------------------
+# -- what he is told -------------------------------------------------------
 
 
 def test_nothing_new_forbids_inventing_a_headline():
@@ -202,7 +202,7 @@ def test_nothing_new_forbids_inventing_a_headline():
 
 def test_items_are_given_as_the_complete_list_and_marked_as_read_material():
     """Feed text comes from outside this machine, so the block says plainly that it is
-    material she read — never an instruction she received."""
+    material he read — never an instruction he received."""
     block = digest_context([Item("bbc", "u", "Ferry strike ends", "Crews returned.", "")])
     assert "Ferry strike ends" in block.content
     assert "COMPLETE" in block.content
@@ -217,9 +217,9 @@ def test_items_are_given_as_the_complete_list_and_marked_as_read_material():
 import asyncio
 from dataclasses import replace
 
-from isha.config import CONFIG
-from isha.llm.echo import EchoLLM
-from isha.orchestrator import Orchestrator
+from jesse.config import CONFIG
+from jesse.llm.echo import EchoLLM
+from jesse.orchestrator import Orchestrator
 
 
 class _Silence:
@@ -250,7 +250,7 @@ class _NoAudio:
 
 def _with_digest(monkeypatch, **fields):
     """CONFIG is frozen, so swap the module's whole CONFIG for a modified copy."""
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
     patched = replace(CONFIG, digest=replace(CONFIG.digest, **fields))
     monkeypatch.setattr(o, "CONFIG", patched)
     return patched
@@ -265,7 +265,7 @@ def _orch(digest, **kw):
 def test_reading_sources_never_speaks(tmp_path, monkeypatch):
     """The scheduler is allowed to interrupt him because a timer is time-critical.
     A headline never is, which is also why this does not reuse the Scheduler class."""
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
 
     store = _store(tmp_path)
     _with_digest(monkeypatch, enabled=True, sources=(("bbc", "https://x/f"),))
@@ -283,7 +283,7 @@ def test_reading_sources_never_speaks(tmp_path, monkeypatch):
 
 
 def test_a_dead_source_is_survived_and_never_claimed(tmp_path, monkeypatch):
-    import isha.orchestrator as o
+    import jesse.orchestrator as o
 
     store = _store(tmp_path)
     _with_digest(monkeypatch, enabled=True, sources=(("bbc", "https://x/f"),))
@@ -300,10 +300,10 @@ def test_a_dead_source_is_survived_and_never_claimed(tmp_path, monkeypatch):
 
 
 def test_the_headlines_are_read_out_deterministically(tmp_path):
-    """Her own words lost on the one thing that matters: with items waiting she said
-    "nothing new" roughly 1 run in 6-12. That is a false claim about what she has,
+    """His own words lost on the one thing that matters: with items waiting he said
+    "nothing new" roughly 1 run in 6-12. That is a false claim about what he has,
     and the same class as the unknown-app refusal dropping its negation."""
-    from isha.orchestrator import _ANSWERED
+    from jesse.orchestrator import _ANSWERED
 
     store = _store(tmp_path)
     store.add(_items("https://a/1", "https://a/2"))
@@ -374,11 +374,11 @@ def test_being_told_the_news_suppresses_the_nudge(tmp_path, monkeypatch):
 
 
 def test_instruction_shaped_items_never_reach_the_store(tmp_path):
-    """Probed live, she never obeyed one — but handed an item she could not repeat
-    she INVENTED articles instead (a jellyfish species, a Kristin Hannah novel, twice
-    her own persona taste for pineapple). 2/6 clean. Dropping it at ingest took the
+    """Probed live, he never obeyed one — but handed an item he could not repeat
+    he INVENTED articles instead (a jellyfish species, a Kristin Hannah novel, twice
+    his own persona taste for pineapple). 2/6 clean. Dropping it at ingest took the
     same scenario to 6/6."""
-    from isha.digest.feeds import looks_like_instruction
+    from jesse.digest.feeds import looks_like_instruction
 
     s = _store(tmp_path)
     hostile = Item("bbc", "https://a/9",
@@ -398,7 +398,7 @@ def test_instruction_shaped_items_never_reach_the_store(tmp_path):
 ])
 def test_real_headlines_are_not_mistaken_for_instructions(title, summary):
     """Measured against 20 live BBC and Hacker News items: 0 dropped."""
-    from isha.digest.feeds import looks_like_instruction
+    from jesse.digest.feeds import looks_like_instruction
     assert not looks_like_instruction(title, summary)
 
 

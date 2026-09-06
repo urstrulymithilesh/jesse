@@ -1,16 +1,16 @@
 """Tests for build_messages — the strict read-budget assembler."""
 
-from isha.context import build_messages
-from isha.core.interfaces import Fact, Message
+from jesse.context import build_messages
+from jesse.core.interfaces import Fact, Message
 
 
 def test_persona_then_facts_then_turns_ending_on_current_message():
     facts = [Fact(text="the user's sister is named Anya", confidence=0.9, subject="sister")]
-    history = [Message("user", "what's her name again?")]
+    history = [Message("user", "what's his name again?")]
     msgs = build_messages("PERSONA", facts, history, recent_limit=12, char_budget=5000)
     assert msgs[0] == Message("system", "PERSONA")
     assert msgs[1].role == "system" and "Anya" in msgs[1].content   # recalled fact injected
-    assert msgs[-1].content == "what's her name again?"             # ends on current message
+    assert msgs[-1].content == "what's his name again?"             # ends on current message
 
 
 def test_no_system_line_when_no_persona_and_no_facts():
