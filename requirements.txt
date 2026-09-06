@@ -1,4 +1,4 @@
-# Esha — fully-local voice companion. All deps run offline on-device.
+# Jesse — fully-local voice friend. All deps run offline on-device.
 # Chosen in /plan-eng-review (2026-08-19). Compute split: GPU=reason, CPU=hear+speak+embed.
 #
 # IMPORTANT (Phase 0 landmine): use Python 3.11 or 3.12. Several of these wheels
@@ -45,3 +45,8 @@ piper-tts
 # --- Dev / test ---
 pytest
 ruff
+
+# --- Pairing QR for the remote client ---
+# Pure Python, no dependencies of its own. The first dependency added for
+# convenience rather than capability; without it `jesse pair` just prints a link.
+segno

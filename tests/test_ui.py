@@ -1,7 +1,7 @@
 """Text UI backend: the channel, the HTTP endpoints, and the shared turn pipeline.
 
 The page itself is not testable here, but the thing that matters is: typed input must
-travel the SAME path as speech. Two paths would mean two Ishas with different memories.
+travel the SAME path as speech. Two paths would mean two Jesses with different memories.
 """
 
 from __future__ import annotations

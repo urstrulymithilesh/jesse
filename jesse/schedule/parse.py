@@ -145,7 +145,9 @@ def _clean_task(text: str, *, spans: list[tuple[int, int]]) -> str:
             low = out.lower()
             break
     out = re.sub(r"^\s*(?:to|for|that|about)\b", " ", out.strip(), flags=re.I)
-    out = re.sub(r"\b(?:please|hey|isha|ok|okay)\b", " ", out, flags=re.I)
+    # "isha" stays alongside "jesse": whisper still renders the wake word oddly, and a
+    # transcript recorded before the rename should still strip cleanly.
+    out = re.sub(r"\b(?:please|hey|jesse|isha|ok|okay)\b", " ", out, flags=re.I)
     out = re.sub(r"[\s,.!?]+", " ", out).strip(" ,.!?")
     return out
 

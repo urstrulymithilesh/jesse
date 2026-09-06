@@ -362,5 +362,5 @@ def test_each_sentence_is_printed_as_it_starts_playing(capsys):
     orch, _t = _orch(ScriptedLLM("First one. Second one."))
     asyncio.run(orch._think_and_speak([]))
     out = capsys.readouterr().out
-    assert 'isha: "First one."' in out
-    assert 'isha: "Second one."' in out
+    assert 'jesse: "First one."' in out
+    assert 'jesse: "Second one."' in out

@@ -76,7 +76,7 @@ class RemoteSource:
     def active(self) -> bool:
         """True while the phone is still there. Goes false when it stops calling.
 
-        Silence while SHE is speaking does not count. The page deliberately stops
+        Silence while HE is speaking does not count. The page deliberately stops
         uploading during playback — that is the half-duplex rule, without which his
         own voice comes back through the phone's speaker and trips the stop-word — so
         ageing out on it cannot distinguish "hung up" from "politely quiet". Measured

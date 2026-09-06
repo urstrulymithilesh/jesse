@@ -82,7 +82,7 @@ def _asks_about_past(text: str) -> bool:
     return any(p in t for p in _PAST_PATTERNS)
 
 
-# "How are you / what can you do / what version are you" — questions about HERSELF.
+# "How are you / what can you do / what version are you" — questions about HIMSELF.
 # Only then do we spend context on the self-state block.
 _SELF_PATTERNS = (
     "how are you", "how do you feel", "how're you", "how you doing", "how are things",
@@ -107,8 +107,9 @@ _SHARED_HISTORY_PATTERNS = (
 # Explicit "stand down" — back to wake-word-required.
 _QUIET_PATTERNS = (
     "go to sleep", "go quiet", "stop listening", "stand down", "that's all for now",
-    "thats all for now", "stop for now", "be quiet", "sleep now", "goodnight isha",
-    "good night isha", "leave me alone", "we're done", "were done", "that will be all",
+    "thats all for now", "stop for now", "be quiet", "sleep now", "goodnight jesse",
+    "good night jesse", "night jesse", "leave me alone", "we're done", "were done",
+    "that will be all",
     "stop the conversation", "end the conversation",
 )
 
@@ -714,7 +715,7 @@ class Orchestrator:
         if self.state is not ConversationState.SPEAKING:
             self._enter(ConversationState.SPEAKING)
             self.transport.mute_input()    # half-duplex holds for the whole reply
-        print(f'  isha: "{text}"')          # printed as each sentence starts playing
+        print(f'  jesse: "{text}"')         # printed as each sentence starts playing
         if self.text_channel is not None:
             self.text_channel.log("jesse", text)
             self.text_channel.set_speaking(True)
@@ -1179,7 +1180,7 @@ class Orchestrator:
         self._enter(ConversationState.SPEAKING)
         self._interrupt.clear()
         self.transport.mute_input()
-        print(f'  isha: "{text}"')
+        print(f'  jesse: "{text}"')
         try:
             await self.transport.play(
                 self._interruptible(self.synth.synthesize(text)),

@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# An instruction aimed at HER memory.
+# An instruction aimed at HIS memory.
 _FORGET_VERBS = ("forget", "delete", "erase", "remove", "unlearn", "scrub")
 # "stop remembering X" / "no longer remember X" mean the same as "forget X".
 _STOP_REMEMBERING = ("stop remembering", "quit remembering",

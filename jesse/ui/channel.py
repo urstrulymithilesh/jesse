@@ -1,7 +1,7 @@
 """The seam between the web UI and the voice loop.
 
 Typed text and spoken audio have to end up in the SAME turn pipeline — same persona,
-same memory, same reminders — or there are two Ishas with different memories. So the
+same memory, same reminders — or there are two Jesses with different memories. So the
 UI does not get its own path: it drops text into this queue, the orchestrator drains
 it in the very loop that handles microphone frames, and from there a typed turn is
 indistinguishable from a spoken one.

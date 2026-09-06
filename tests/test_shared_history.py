@@ -54,7 +54,7 @@ def test_the_anchor_lists_only_real_facts_and_forbids_inventing():
 
 
 def test_the_anchor_excludes_facts_about_her_own_build():
-    """self / self_history describe HER, not their history together."""
+    """self / self_history describe HIM, not their history together."""
     facts = [
         Fact(text="the user's favourite colour is black", confidence=1.0,
              subject="colour", origin="conversation"),

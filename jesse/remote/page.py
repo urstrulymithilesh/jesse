@@ -34,7 +34,7 @@ PAGE = """<!doctype html>
   .line { margin:0 0 14px; white-space:pre-wrap; word-wrap:break-word; }
   .who { color:#555; margin-right:9px; }
   .you .who { color:#4a7dbd; }
-  .isha .who { color:#b06a8f; }
+  .jesse .who { color:#b06a8f; }
   #empty, #warn { color:#333; }
   #warn { color:#b06a8f; padding:0 18px 14px; font-size:13px; }
   footer { border-top:1px solid #1c1c1c; padding:14px 18px calc(14px + env(safe-area-inset-bottom));
@@ -46,7 +46,7 @@ PAGE = """<!doctype html>
   input { flex:1; background:#000; color:#fff; border:1px solid #333; border-radius:8px;
           padding:12px 14px; font:inherit; outline:none; min-width:0; }
 </style></head><body>
-<header><span id="dot"></span><span>isha</span><span id="mode" style="margin-left:auto">remote</span></header>
+<header><span id="dot"></span><span>jesse</span><span id="mode" style="margin-left:auto">remote</span></header>
 <div id="warn" hidden></div>
 <div id="log"><div id="empty" class="line">not listening yet.</div></div>
 <footer>
@@ -60,9 +60,9 @@ const RATE = 16000, CHUNK_MS = 250;
 // The token arrives once in the address bar, then lives in localStorage and is
 // stripped from the URL so it is not sitting in history or a screenshot.
 let token = new URLSearchParams(location.search).get('t');
-if (token) { localStorage.setItem('isha_token', token);
+if (token) { localStorage.setItem('jesse_token', token);
              history.replaceState({}, '', location.pathname); }
-token = token || localStorage.getItem('isha_token') || '';
+token = token || localStorage.getItem('jesse_token') || '';
 
 function headers() { return { 'X-Jesse-Token': token, 'Content-Type': 'application/octet-stream' }; }
 

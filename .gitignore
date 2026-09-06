@@ -6,7 +6,7 @@ __pycache__/
 venv/
 env/
 
-# Esha runtime data (local, private — never commit)
+# Jesse runtime data (local, private — never commit)
 *.db
 *.sqlite
 *.sqlite3

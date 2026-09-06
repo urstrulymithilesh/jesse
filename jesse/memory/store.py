@@ -33,11 +33,11 @@ def _may_merge(origin_a: str, origin_b: str) -> bool:
     """Two SEEDED facts are never merged into each other.
 
     Similarity alone cannot decide this. Measured on bge-small, "job" vs "job title"
-    (should merge) is 0.843 while "isha's creator" vs "isha's name" (must NOT) is
+    (should merge) is 0.843 while "jesse's creator" vs "jesse's name" (must NOT) is
     0.885 — they overlap, so no threshold separates them. But seeded facts are
     hand-authored as deliberately separate entries, which is authoritative in a way a
-    cosine isn't. Without this rule, `jesse seed` silently dropped "isha's name" by
-    merging it into "isha's creator". With it, the highest colliding pair that still
+    cosine isn't. Without this rule, `jesse seed` silently dropped "jesse's name" by
+    merging it into "jesse's creator". With it, the highest colliding pair that still
     depends on the threshold is sister's/brother's name at 0.822 — safely under 0.88.
     """
     return not (origin_a in PROTECTED_ORIGINS and origin_b in PROTECTED_ORIGINS)
