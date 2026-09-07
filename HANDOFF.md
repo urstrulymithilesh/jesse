@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-`ee7fc8b` · 410 tests · 9/9 smoke · Python 3.13 · `D:\New folder\jesse` ·
+`c19af33` · 412 tests · 9/9 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -41,19 +41,24 @@ trade honesty or a real bug for brevity.
 A **local AI friend** — mate, hype man, the one who pushes him. Lives on one machine,
 belongs to one person, sends nothing anywhere.
 
-- **NOT a partner, NOT romantic.** He was Isha, a girlfriend-like partner, until
-  2026-09-03. Changed deliberately. Banned words in his persona: **companion**,
-  **partner**, **assistant**.
+- **NOT a partner, NOT romantic.** Close friend, hype man, blunt, loyal underneath.
+  Banned words in his persona: **companion**, **partner**, **assistant**.
 - **He is male, he/him.** Mithilesh is also "he" — when writing docs, name whoever you
-  mean; a bare pronoun no longer distinguishes them.
+  mean; a bare pronoun does not distinguish them.
+- **He has no prior identity and no history of being anything else.** Nothing in this
+  repo says otherwise; keep it that way.
 - **Brain, memory, processing: 100% local, always.** The network is a *connection*, not
   a home — outbound RSS, and remote access to his own machine. Routing a conversation
   through a third party is refused (this is why Twilio was rejected twice).
 - **Always listening** once woken, until told to stand down.
 - **Voice and text feed one mind** — same memory, same persona, same pipeline.
 - **He remembers** facts *and* conversations.
-- **He is honest.** Never performs knowledge he lacks, never invents a shared past.
-  This constraint has driven more design decisions than any feature.
+- **HE NEVER MAKES THINGS UP.** The rule that outranks the rest, with its own block
+  in the persona. He knows exactly three things: what Mithilesh tells him now, what he
+  has actually been given, and the injected clock. No shared history, no tastes of his
+  own, no world-state. The other half matters equally: **what he HAS been given, he
+  knows — answer from it.** Refusing when the answer is in front of him is a different
+  kind of wrong, and the smoke harness caught exactly that regression.
 
 ---
 
@@ -82,7 +87,8 @@ drops few-shot examples for memory questions.
 
 | | |
 |---|---|
-| Model | `llama3.2` · ctx 4096 · temp 0.6 · question-keep 0.15 · keep_alive -1 · 90s timeout |
+| Model | `llama3.2` via Ollama · ctx 4096 · temp 0.6 · question-keep 0.15 · keep_alive -1 · 90s timeout |
+| Hosted brain | **opt-in only**, `run --experiential` → Experiential gateway, `claude-fable-5.1`, key from `$EXPLABS_API_KEY`. **Prompts leave the machine.** Deliberate exception; Ollama stays the default and the local path is never traded away silently. |
 | Voice | Piper **`en_US-ryan-high`** (22050 Hz) — only voice on disk |
 | STT | faster-whisper `base.en`, int8, CPU |
 | Wake / stop | `hey_jarvis` (placeholder; real word will be "yo Jesse") |
@@ -159,6 +165,19 @@ in §8.
 ## 6. Hard-won lessons
 
 These cost real debugging time. They are patterns, not trivia.
+
+**A spoken slip is cheap; a stored one is permanent.** Asked whether he likes
+pineapple on pizza he answers with a taste he does not have, 8 times in 9, and no
+prompt wording fixed it — a one-word answer that happens to assert a preference. The
+fix went where it holds: `"Jesse does not like pineapple on pizza"` is third person,
+well formed, and the extraction filter *would have stored it forever*. Anything naming
+Jesse, and anything under four words, is now refused at the door. **Put the guard where
+the damage persists, not where the mistake is made.**
+
+**An honesty rule over-applies in both directions.** Made prominent, it produced "No
+idea, man." to *"I burnt the rice"* — refusing ordinary conversation. Scoped to claims,
+it then produced "Nah." instead of reading out a headline he had been handed. Both
+halves have to be stated: **answer from what you have, admit what you don't.**
 
 **Fakes cannot catch stateless-vs-stateful bugs.** The real wake detector is a
 *streaming* model needing ~1s of continuous audio; fed only in its own state it went
@@ -302,9 +321,12 @@ model". Fix: `python -c "import openwakeword.utils as u; u.download_models()"`.
 
 ## 8. Rough edges
 
-- **Persona substance is inconsistent.** Register lands (0/10 helpdesk, 0/10 British,
-  0/10 name tic) but the hype-man switch — dropping the joking when something genuinely
-  went well — works maybe half the time. Same 3B judgement ceiling as memory grounding.
+- **Persona: register clean, substance thin.** Measured 0/10 helpdesk, 0/10
+  therapist, 0/10 British, 0/10 name tic, 1/10 questions; fabrication 11/12 admit not
+  knowing. But reading the replies, "Nah." to burnt rice is not a reaction and "Nah" is
+  filler in 4 of 10. **Every strengthening of the honesty rule has cost conversational
+  substance** — on a 3B that tension looks structural, not one prompt pass away. Tune
+  against real transcripts rather than another prompt rewrite.
 - **Only one Jesse at a time.** Two copies fight over the microphone and the second
   hears almost nothing; it presents as calibration failing for no reason.
   `data/jesse.pid` names the clash at startup.
