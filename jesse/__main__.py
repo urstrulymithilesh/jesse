@@ -4,8 +4,6 @@
     python -m jesse --spike      # hardware + plumbing spike
     python -m jesse run          # run the live walking-skeleton loop (needs mic + models)
     python -m jesse run --ollama # same, but use the real Ollama brain instead of Echo
-    python -m jesse run --experiential  # hosted brain via the Experiential gateway
-                                        # (NOT local — needs $EXPLABS_API_KEY)
 """
 
 from __future__ import annotations
@@ -30,8 +28,6 @@ def _status() -> int:
     print("           python -m jesse smoke   (live end-to-end check, ~1-3 min)")
     print("           python -m jesse run --ui  (adds the text UI at 127.0.0.1:8765)")
     print("           python -m jesse run --remote  (adds the phone client, port 8766)")
-    print(f"           python -m jesse run --experiential  (hosted brain: "
-          f"{CONFIG.reasoning.experiential_model} — leaves this machine)")
     print("           python spike.py        (prove the hardware)")
     return 0
 
@@ -435,8 +431,7 @@ def _run(argv: list[str]) -> int:
         channel = TextChannel()
         url = start_ui(channel, port=int(_flag_value(argv, "--port") or 8765))
     orch, voice_label, brain_label = build_orchestrator(
-        use_ollama="--ollama" in argv, use_experiential="--experiential" in argv,
-        input_device=device, text_channel=channel,
+        use_ollama="--ollama" in argv, input_device=device, text_channel=channel,
     )
 
     # Remote: his phone, over his own tailnet. Wraps the desk transport rather than

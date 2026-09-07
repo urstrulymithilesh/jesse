@@ -88,7 +88,6 @@ drops few-shot examples for memory questions.
 | | |
 |---|---|
 | Model | `llama3.2` via Ollama · ctx 4096 · temp 0.6 · question-keep 0.15 · keep_alive -1 · 90s timeout |
-| Hosted brain | **opt-in only**, `run --experiential` → Experiential gateway, `claude-fable-5.1`, key from `$EXPLABS_API_KEY`. **Prompts leave the machine.** Deliberate exception; Ollama stays the default and the local path is never traded away silently. |
 | Voice | Piper **`en_US-ryan-high`** (22050 Hz) — only voice on disk |
 | STT | faster-whisper `base.en`, int8, CPU |
 | Wake / stop | `hey_jarvis` (placeholder; real word will be "yo Jesse") |
