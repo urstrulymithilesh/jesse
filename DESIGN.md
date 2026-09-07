@@ -328,7 +328,7 @@ with mocked audio/LLM. Persona/recall = eval, re-run on every model swap.
 - **Skill-mastery RAG** (Approach C) — v2 headline feature.
 - **Proactive daily source digests** — later phase.
 - **Full-duplex barge-in / AEC** — stop-word interrupt only; true open-speaker duplex deferred.
-- **Custom "Jesse" wake word** — stock "hey jarvis" until a custom model is trained
+- **Custom "yo Jesse" wake word** — a stock model stands in until one is trained
   (openwakeword.com / Colab, synthetic data). Likely bundled with voice cloning as one
   future phase. A long unusual phrase ("wake up daddy's home") is a *poor* wake-word
   candidate — higher false-trigger + miss rate than a short trained phrase; if trained,

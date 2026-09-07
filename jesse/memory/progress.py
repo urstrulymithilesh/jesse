@@ -268,12 +268,12 @@ PROGRESS_LOG: list[ProgressEntry] = [
         False,
     ),
     ProgressEntry(
-        "v2.0 — he is Jesse now", "2026-09-03",
-        "he used to be Isha, and she was meant to be something else entirely — closer, "
-        "softer, a partner. That is not what Mithilesh wanted from him, so he is Jesse: "
-        "his mate, loud and blunt and in his corner, the one who tells him his plan is "
-        "thin and then helps anyway. Same memory, same everything he could already do. "
-        "Different person",
+        "v2.0 — he found his voice", "2026-09-03",
+        "he sounds like himself now — loud, blunt, in Mithilesh's corner, the one who "
+        "says the plan is thin and then helps anyway. And he will not make things up "
+        "any more: no invented memories, no borrowed opinions, no answer dressed up to "
+        "look like knowing. If it did not happen or he was never told, he says so, and "
+        "nothing he only said in passing can end up filed as something true",
         True,
     ),
 ]

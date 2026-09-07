@@ -459,13 +459,13 @@ def test_dedupe_never_merges_a_false_positive_pair():
 
 
 def test_two_seeded_facts_are_never_merged_into_each_other():
-    """The bug this rule exists for: "isha's creator" and "isha's name" score 0.885,
-    over the threshold, and seeding silently lost "isha's name"."""
-    s = _dedupe_store([("isha's creator", "isha's name")])   # forced to look identical
+    """The bug this rule exists for: "jesse's creator" and "jesse's name" score 0.885,
+    over the threshold, and seeding silently lost "jesse's name"."""
+    s = _dedupe_store([("jesse's creator", "jesse's name")])   # forced to look identical
     s.add_fact(Fact(text="Jesse was created by Mithilesh", confidence=1.0,
-                    subject="isha's creator", origin="core"))
+                    subject="jesse's creator", origin="core"))
     s.add_fact(Fact(text="the AI partner's name is Jesse", confidence=1.0,
-                    subject="isha's name", origin="core"))
+                    subject="jesse's name", origin="core"))
 
     assert len(s.all_facts()) == 2, "two seeded facts must never collapse"
     assert s.duplicate_groups() == []
@@ -491,3 +491,31 @@ def test_dedupe_backfills_subject_vectors_for_legacy_facts():
 
     s.duplicate_groups()
     assert s._conn.execute("SELECT COUNT(*) FROM subject_vectors").fetchone()[0] == 1
+
+
+def test_a_preference_jesse_states_can_never_become_a_stored_fact():
+    """The leak that matters is not him saying a taste out loud — it is that taste
+    surviving as memory and being repeated back as true.
+
+    Probed live: asked whether he likes pineapple on pizza he answers with a taste he
+    does not have, 8 times in 9, and no prompt wording fixed it. But "Jesse does not
+    like pineapple on pizza" is third person and well formed, so the old filter would
+    have stored it forever. Shutting that door makes the spoken slip harmless.
+    """
+    raw = ('[{"subject":"pizza","text":"Jesse does not like pineapple on pizza","confidence":0.9},'
+           '{"subject":"food","text":"Jesse\'s favourite food is pizza","confidence":0.9},'
+           '{"subject":"food","text":"Nah.","confidence":0.9},'
+           '{"subject":"birthday","text":"the user\'s birthday month is November","confidence":1.0}]')
+    kept = parse_extracted_facts(raw)
+    assert [f.text for f in kept] == ["the user's birthday month is November"]
+
+
+def test_real_facts_are_not_caught_by_the_new_filters():
+    """A filter that eats real facts is worse than the leak it prevents."""
+    from jesse.memory.extraction import _is_junk
+
+    for text in ("the user's sister is named Anya",
+                 "the user works as a data analyst at a hospital",
+                 "Mithilesh's favourite colour is black",
+                 "the user goes to the gym on Tuesday evenings"):
+        assert not _is_junk(text), text

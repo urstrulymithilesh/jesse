@@ -40,6 +40,16 @@ class ReasoningConfig:
     question_keep_rate: float = 0.15
     request_timeout: int = 90           # seconds; CPU generation is slow, but this bounds a hang
 
+    # --- Experiential gateway (hosted brain; opt-in via `run --experiential`) ---
+    # Speaks the OpenAI Chat Completions API, so pointing at it is a base-URL + key
+    # swap, nothing more. This breaks the fully-local line above by design: turning it
+    # on sends conversation text off this machine and bills an Experiential account.
+    # The key is NEVER stored here — it is read from the environment at call time.
+    experiential_base_url: str = "https://api.experientiallabs.ai/v1"
+    experiential_model: str = "claude-fable-5.1"
+    experiential_api_key_env: str = "EXPLABS_API_KEY"
+    experiential_max_tokens: int = 512   # replies are spoken aloud, so keep them short
+
 
 @dataclass(frozen=True)
 class SpeechConfig:
@@ -94,7 +104,7 @@ class AudioConfig:
 @dataclass(frozen=True)
 class WakeConfig:
     # Stock openWakeWord model until "yo Jesse" is trained (a separate future task).
-    model: str = "hey_jarvis"           # placeholder; the real word will be "yo Jesse"
+    model: str = "hey_jarvis"           # a stock model; "yo Jesse" gets trained later
     stop_word: str = "hey_jarvis"       # kept live during SPEAKING to allow barge-in
 
 

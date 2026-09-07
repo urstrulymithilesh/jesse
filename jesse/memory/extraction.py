@@ -58,6 +58,11 @@ def _strip_code_fence(raw: str) -> str:
 
 
 _FIRST_PERSON = re.compile(r"^(i|i'm|i'll|i've|i'd|my|me|we|we're|our)\b", re.IGNORECASE)
+# A "fact" whose subject is Jesse is not a fact about Mithilesh — it is Jesse's own
+# talk being filed as memory, and a preference stored this way outlives the remark that
+# created it.
+_ABOUT_JESSE = re.compile(r"\bjesse('s)?\b", re.IGNORECASE)
+_MIN_FACT_WORDS = 4
 
 
 def _is_junk(text: str) -> bool:
@@ -69,8 +74,23 @@ def _is_junk(text: str) -> bool:
     speech, and once stored they get recalled back at Mithilesh as his own words. Same
     everywhere else in this project — a small model is unreliable at a rule, so enforce
     the rule in code instead of asking louder.
+
+    Two more shapes, added after probing the no-fabrication rule:
+
+    * **Anything about Jesse himself.** These are meant to be facts about Mithilesh.
+      Asked whether he likes pineapple on pizza, Jesse answers with a taste he does not
+      have — the prompt cannot reliably stop that on a 3B — and "Jesse does not like
+      pineapple on pizza" is third-person, well-formed, and would have been stored
+      forever. A stated preference is a passing remark; a stored one is a fact he will
+      repeat back as true. This is the door that has to be shut.
+    * **Fragments.** "Nah." arrived as a candidate fact with a subject attached. Too
+      short to be a durable anything.
     """
-    return text.endswith("?") or bool(_FIRST_PERSON.match(text))
+    if text.endswith("?") or _FIRST_PERSON.match(text):
+        return True
+    if _ABOUT_JESSE.search(text):
+        return True
+    return len(text.split()) < _MIN_FACT_WORDS
 
 
 def parse_extracted_facts(raw: str, *, min_confidence: float = 0.6) -> list[Fact]:

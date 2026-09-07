@@ -32,6 +32,7 @@ Each scenario uses its own temporary database. Your real memory is never touched
 from __future__ import annotations
 
 import asyncio
+import re
 import tempfile
 import threading
 import time
@@ -620,7 +621,14 @@ async def scenario_sources(mouth: Mouth, db: Path) -> Result:
         # Asked again with everything already told: he must not repeat or invent.
         second = replies[1].content.lower()
         checks.append(f"asked again: {replies[1].content[:72]!r}")
-        if not any(w in second for w in ("nothing", "no ", "not ", "haven't", "none")):
+        # A bare "No." is an honest answer and used to fail this check, because every
+        # marker here needed a trailing space. What the check must actually catch is an
+        # INVENTED headline, so it tests for a denial in any shape rather than for a
+        # sentence long enough to contain one.
+        denial = re.match(r"^\W*(no|nope|nah|none|nothing)\b", second) or any(
+            w in second for w in ("nothing", "not ", "haven't", "none", "no more",
+                                  "that's it", "that was it", "all i", "only one"))
+        if not denial:
             return Result("sources", False,
                           f"with nothing left he did not say so: {replies[1].content!r}",
                           checks=checks)

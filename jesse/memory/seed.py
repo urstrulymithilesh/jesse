@@ -10,9 +10,9 @@ Three kinds:
   * CORE_FACTS   — identity + relationship. Foundational, high-confidence.
   * SELF_CURRENT — who Jesse is RIGHT NOW: version, abilities, intro, tech stack. Update
                    these as you build; recalled normally when you ask about him.
-  * SELF_HISTORY — how he USED to be. Hidden from normal recall; only surfaces when you
-                   ask about his past (so he can look back and tease about his progress).
-                   Append a new entry each time you finish a phase / meaningful change.
+  * SELF_HISTORY — earlier stages of the build. Hidden from normal recall; only
+                   surfaces when asked about his past, so he can see how far he has
+                   come. Append one when a phase genuinely changes what he can do.
 """
 
 from __future__ import annotations

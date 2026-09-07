@@ -39,9 +39,16 @@ def test_the_clock_moves():
 
 
 def test_the_honesty_rule_is_stated_in_the_persona():
+    """Checks the substance, not one phrasing — the rule gets reworded, and a test that
+    pins wording just breaks on every improvement while proving nothing."""
     low = SYSTEM_PROMPT.lower()
-    assert "no way of knowing" in low
-    assert "guessing is not an option" in low
+    # It names the three things he may draw on, and forbids filling gaps.
+    assert "you know exactly three things" in low
+    assert "never make things up" in low
+    assert "invented answer" in low
+    # And it explicitly covers each leak class that has actually happened.
+    for leak in ("shared history", "preferences", "weather"):
+        assert leak in low, f"the no-fabrication rule does not cover {leak}"
 
 
 def test_her_tastes_no_longer_mention_weather():
@@ -79,7 +86,15 @@ def test_no_rule_quotes_the_bad_output_it_forbids():
     quoted = re.findall(r'"([^"\n]{6,})"', rules)
     # Banned PHRASES are legitimate quotes — they are what he must not say, and the
     # measured risk is the opposite one: a quoted example of a bad REPLY he then makes.
-    banned_section = rules.split("NEVER:")[1] if "NEVER:" in rules else ""
+    # Phrases he must NOT SAY are legitimately quoted — that list is the opposite risk,
+    # and it has to name them exactly to be useful. Found by the paragraph that forbids
+    # them rather than by an exact heading, so rewording the heading does not silently
+    # turn the whole banned list into offenders.
+    banned_section = ""
+    for para in rules.split("\n\n"):
+        if "never" in para.lower() and ("helpdesk" in para.lower()
+                                        or "assistant" in para.lower()):
+            banned_section += para
     offenders = [q for q in quoted
                  if q not in banned_section and len(q.split()) >= 3]
     assert not offenders, f"rules quote a repeatable line: {offenders}"
@@ -92,7 +107,7 @@ def test_a_leaked_speaker_label_is_stripped():
     """The few-shot exchanges are labelled "Jesse: ...", and he copied the label."""
     assert clean_for_speech("Jesse: I have no way of seeing outside") == \
         "I have no way of seeing outside"
-    assert clean_for_speech("isha - hello") == "hello"
+    assert clean_for_speech("jesse - hello") == "hello"
 
 
 def test_her_name_is_untouched_when_it_is_part_of_the_sentence():

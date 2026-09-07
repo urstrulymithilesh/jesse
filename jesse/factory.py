@@ -15,10 +15,13 @@ def _print_state(state: ConversationState) -> None:
     print(f"  [state] -> {state.value}")
 
 
-def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = None,
-                       text_channel=None):
+def build_orchestrator(*, use_ollama: bool = False, use_experiential: bool = False,
+                       input_device: int | None = None, text_channel=None):
     """Returns (orchestrator, voice_label, brain_label). input_device overrides
-    CONFIG.audio.input_device (from `run --device N`)."""
+    CONFIG.audio.input_device (from `run --device N`).
+
+    Brain selection: use_experiential wins over use_ollama (both are "a real brain",
+    which is what unlocks memory + the scheduler below); neither = the Echo stub."""
     from jesse.audio.transport import LocalAudioTransport
     from jesse.audio.vad import EnergyVad
     from jesse.audio.wakeword import OpenWakeWordDetector
@@ -28,6 +31,10 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
     from jesse.stt.whisper import WhisperTranscriber
     from jesse.tts.piper import PiperSynthesizer
     from jesse.tts.stub import StubSynthesizer
+
+    # Either real brain satisfies the LLM contract, so everything downstream of the
+    # brain (memory, extraction, episodes, scheduler) is wired identically for both.
+    real_brain = use_ollama or use_experiential
 
     in_dev = input_device if input_device is not None else CONFIG.audio.input_device
     transport = LocalAudioTransport(
@@ -50,20 +57,25 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
         synthesizer = StubSynthesizer()
         voice_label = "STUB (install the Piper binary to swap in real speech)"
 
-    # Memory needs a real brain to extract facts, so it's wired only with Ollama.
+    # Memory needs a real brain to extract facts, so it's wired only for those.
     store = None
     extractor = None
     episodes = None
     summariser = None
     corpus = None
     digest = None
-    if use_ollama:
-        from jesse.llm.ollama import OllamaLLM
+    if real_brain:
         from jesse.memory.embedder import FastEmbedEmbedder
         from jesse.memory.extraction import FactExtractor
         from jesse.memory.store import SqliteMemoryStore
-        llm = OllamaLLM()
-        brain_label = f"Ollama/{CONFIG.reasoning.model}"
+        if use_experiential:
+            from jesse.llm.experiential import ExperientialLLM
+            llm = ExperientialLLM()
+            brain_label = f"Experiential/{CONFIG.reasoning.experiential_model} (NOT local)"
+        else:
+            from jesse.llm.ollama import OllamaLLM
+            llm = OllamaLLM()
+            brain_label = f"Ollama/{CONFIG.reasoning.model}"
         CONFIG.memory.db_path.parent.mkdir(parents=True, exist_ok=True)
         store = SqliteMemoryStore(
             CONFIG.memory.db_path, FastEmbedEmbedder(),
@@ -101,7 +113,7 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
         on_state_change=_print_state,
     )
     # Scheduler needs the orchestrator's notify(), so it's attached after construction.
-    if use_ollama:
+    if real_brain:
         orch.scheduler = Scheduler(
             schedule_store, orch.notify,
             tick_seconds=CONFIG.schedule.tick_seconds,

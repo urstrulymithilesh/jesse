@@ -23,8 +23,7 @@ _WS = re.compile(r"\s+")
 
 # The persona's examples are labelled "Jesse: ...", and the model sometimes copies the
 # label into the reply. Spoken aloud it sounds like he is reading a script.
-# "isha" is kept alongside so a reply generated before the rename still cleans up.
-_SELF_LABEL = re.compile(r"^\s*(?:jesse|isha)\s*[:\-]\s*", re.I)
+_SELF_LABEL = re.compile(r"^\s*jesse\s*[:\-]\s*", re.I)
 
 
 def clean_for_speech(text: str) -> str:

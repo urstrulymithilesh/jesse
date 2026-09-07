@@ -6,7 +6,7 @@ wake role (IDLE) and the stop role (SPEAKING); config decides which model each u
 
 First run downloads the pretrained melspectrogram + embedding models (one-time,
 online); after that it is fully offline. Until "yo Jesse" is trained — a separate
-future task — a stock word stands in (e.g. "hey_jarvis").
+future task — a stock model stands in (e.g. "hey_jarvis").
 """
 
 from __future__ import annotations
