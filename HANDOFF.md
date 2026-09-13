@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-`c19af33` · 412 tests · 9/9 smoke · Python 3.13 · `D:\New folder\jesse` ·
+`378ccee` · 412 tests · 9/9 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -99,7 +99,7 @@ drops few-shot examples for memory questions.
 | Actions | 23 targets · search depth 4 · top-5 |
 | Knowledge | name + keyword trigger · top-2 · 800-char chunks · gate 0.46 |
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
-| Progress log | 28 entries |
+| Progress log | 32 entries |
 
 Everything sits behind `jesse/core/interfaces.py`. Swapping a model or engine is a
 config change.
@@ -294,13 +294,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               410 tests
+tests/               412 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 9 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 410 tests, ~3s
+.venv\Scripts\python.exe -m pytest -q              # 412 tests, ~3s
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
 .venv\Scripts\python.exe -m jesse learn <name> <path> | --list | --ask "..."
