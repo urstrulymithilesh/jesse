@@ -22,7 +22,7 @@ def test_the_real_date_and_time_are_supplied():
     assert "Sunday" in content and "23 August 2026" in content and "09:53" in content
 
 
-def test_she_is_told_it_is_the_only_thing_she_can_perceive():
+def test_he_is_told_it_is_the_only_thing_he_can_perceive():
     content = now_context(now=WHEN).content.lower()
     for blind in ("weather", "news", "location"):
         assert blind in content, blind
@@ -51,7 +51,7 @@ def test_the_honesty_rule_is_stated_in_the_persona():
         assert leak in low, f"the no-fabrication rule does not cover {leak}"
 
 
-def test_her_tastes_no_longer_mention_weather():
+def test_his_tastes_no_longer_mention_weather():
     """"You love rain and grey afternoons" came back out as "Grey and pouring" when he
     was asked what it was like outside. A taste that names a perceivable world-state is
     a false claim waiting to happen."""
@@ -60,7 +60,7 @@ def test_her_tastes_no_longer_mention_weather():
         assert leak not in low, leak
 
 
-def test_the_persona_does_not_hand_her_a_quotable_refusal():
+def test_the_persona_does_not_hand_him_a_quotable_refusal():
     """A capitalised instruction came back verbatim: he literally said
     "I CANNOT KNOW IT." Directives must describe behaviour, not supply a line."""
     assert "SAY YOU CANNOT KNOW IT" not in SYSTEM_PROMPT
@@ -110,5 +110,5 @@ def test_a_leaked_speaker_label_is_stripped():
     assert clean_for_speech("jesse - hello") == "hello"
 
 
-def test_her_name_is_untouched_when_it_is_part_of_the_sentence():
+def test_his_name_is_untouched_when_it_is_part_of_the_sentence():
     assert clean_for_speech("Jesse is the name you gave me") == "Jesse is the name you gave me"
