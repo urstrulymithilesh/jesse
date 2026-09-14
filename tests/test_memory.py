@@ -175,7 +175,7 @@ def test_parse_tolerates_code_fence():
     assert len(facts) == 1 and "python" in facts[0].text
 
 
-def test_parse_drops_her_own_speech_and_questions():
+def test_parse_drops_his_own_speech_and_questions():
     """Live db junk: three of nine learned facts were Jesse's own lines, filed as facts
     about him. The prompt already forbids it; the model does it anyway."""
     raw = ("[{\"subject\":\"practicing\",\"text\":\"I'll start practicing the Indian accent.\",\"confidence\":0.9},"

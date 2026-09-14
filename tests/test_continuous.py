@@ -38,13 +38,13 @@ def _orch(frames, transcriber=None):
 # -- the quiet command (pure) -----------------------------------------------
 
 
-def test_recognises_ways_of_asking_her_to_stop():
+def test_recognises_ways_of_asking_him_to_stop():
     for text in ("go to sleep", "stop listening", "go quiet", "that's all for now",
                  "we're done", "stand down", "be quiet"):
         assert _asks_to_go_quiet(text), text
 
 
-def test_ordinary_talk_does_not_stand_her_down():
+def test_ordinary_talk_does_not_stand_him_down():
     for text in ("I need to stop working at five", "the baby is asleep",
                  "I'm done with this project", "quiet day today"):
         assert not _asks_to_go_quiet(text), text
@@ -53,7 +53,7 @@ def test_ordinary_talk_does_not_stand_her_down():
 # -- engagement --------------------------------------------------------------
 
 
-def test_the_wake_word_engages_her():
+def test_the_wake_word_engages_him():
     orch, _t = _orch([])
     assert not orch._engaged
     asyncio.run(orch._handle_frame(WAKE))
@@ -86,7 +86,7 @@ def test_a_second_turn_needs_no_wake_word():
     assert len(transport.spoken) == 2, "the follow-up turn never ran"
 
 
-def test_going_quiet_returns_her_to_wake_word_mode():
+def test_going_quiet_returns_him_to_wake_word_mode():
     orch, transport = _orch([WAKE, SPEECH, END],
                             transcriber=Says("go to sleep"))
     asyncio.run(orch.run())
@@ -103,7 +103,7 @@ def test_after_going_quiet_speech_alone_does_nothing():
     assert orch.state is ConversationState.IDLE
 
 
-def test_a_new_wake_word_re_engages_her():
+def test_a_new_wake_word_re_engages_him():
     orch, _t = _orch([])
 
     async def scenario():
@@ -134,7 +134,7 @@ def test_engaged_uses_the_long_window_not_the_short_one():
     assert orch.state is ConversationState.LISTENING, "dropped out on the short window"
 
 
-def test_she_does_eventually_stand_down_when_ignored():
+def test_he_does_eventually_stand_down_when_ignored():
     """Not infinite on purpose: a false VAD trigger would otherwise run forever, and a
     mic that never closes is a privacy problem."""
     orch, _t = _orch([])

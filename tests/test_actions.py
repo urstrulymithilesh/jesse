@@ -262,7 +262,7 @@ def test_a_failed_open_never_claims_success(monkeypatch):
     assert "did not work" in note and "Do not claim it opened" in note
 
 
-def test_an_app_she_does_not_have_is_refused_in_her_own_deterministic_words(monkeypatch):
+def test_an_app_he_does_not_have_is_refused_in_his_own_deterministic_words(monkeypatch):
     """Not a prompt note: probed live, the 3B dropped the negation and said "I can
     open Photoshop." A claim of ability is spoken deterministically or not at all."""
     orch = _orch()

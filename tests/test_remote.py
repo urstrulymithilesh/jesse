@@ -134,7 +134,7 @@ def test_the_phone_takes_over_and_the_desk_mic_is_ignored():
     assert frames[0] == b"\x09\x09" * CHUNK_SAMPLES
 
 
-def test_her_reply_goes_to_the_phone_while_it_has_the_floor():
+def test_jesses_reply_goes_to_the_phone_while_it_has_the_floor():
     local = _FakeLocal()
     source = RemoteSource()
     source.submit(b"\x09\x09" * CHUNK_SAMPLES)
@@ -145,7 +145,7 @@ def test_her_reply_goes_to_the_phone_while_it_has_the_floor():
     assert source.take_reply() == (b"reply", 22050)
 
 
-def test_her_reply_goes_to_the_speakers_when_he_is_at_the_desk():
+def test_jesses_reply_goes_to_the_speakers_when_he_is_at_the_desk():
     local = _FakeLocal()
     t = SwitchingTransport(local, RemoteSource())
     asyncio.run(t.play(iter([b"reply"]), sample_rate=22050))
@@ -161,7 +161,7 @@ def test_the_phone_stops_being_the_source_once_it_goes_quiet():
     assert t.frames_from_local == 6
 
 
-def test_audio_arriving_while_she_speaks_is_dropped():
+def test_audio_arriving_while_he_speaks_is_dropped():
     """Half-duplex, same rule as the desk. Without it his own voice comes back in
     through the phone's speaker and trips the stop-word on his own reply."""
     source = RemoteSource()
@@ -283,7 +283,7 @@ def test_confirmation_can_be_turned_off(monkeypatch):
     assert opened == ["spotify:"]
 
 
-def test_going_quiet_while_she_speaks_does_not_hand_the_floor_back():
+def test_going_quiet_while_he_speaks_does_not_hand_the_floor_back():
     """The page stops uploading during his reply — that IS the half-duplex rule. An
     idle timeout that counts it hands the desk the floor mid-conversation and plays
     his answer into an empty room, which is exactly what the smoke run caught."""

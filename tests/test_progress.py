@@ -42,7 +42,7 @@ def _mood(msg) -> str:
     return msg.content.split("right now you feel", 1)[1].split(".")[0]
 
 
-def test_significant_change_makes_her_feel_more_alive():
+def test_significant_change_makes_him_feel_more_alive():
     msg = self_state_context(SIG, OLD)
     assert msg is not None and msg.role == "system"
     assert "alive" in _mood(msg)

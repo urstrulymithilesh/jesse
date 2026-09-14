@@ -124,7 +124,7 @@ def test_typed_input_runs_a_full_turn_through_the_same_pipeline():
     assert [m.content for m in orch._history if m.role == "user"] == ["what is my name"]
 
 
-def test_a_typed_turn_appears_in_the_transcript_with_her_reply():
+def test_a_typed_turn_appears_in_the_transcript_with_his_reply():
     c = TextChannel()
     orch, _t = _orch(c)
     c.submit("hello there")

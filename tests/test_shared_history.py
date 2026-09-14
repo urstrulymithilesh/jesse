@@ -53,7 +53,7 @@ def test_the_anchor_lists_only_real_facts_and_forbids_inventing():
     assert "do not invent" in msg.content.lower()
 
 
-def test_the_anchor_excludes_facts_about_her_own_build():
+def test_the_anchor_excludes_facts_about_his_own_build():
     """self / self_history describe HIM, not their history together."""
     facts = [
         Fact(text="the user's favourite colour is black", confidence=1.0,
@@ -69,7 +69,7 @@ def test_the_anchor_excludes_facts_about_her_own_build():
     assert "robotic" not in content
 
 
-def test_with_nothing_stored_she_is_told_to_say_so():
+def test_with_nothing_stored_he_is_told_to_say_so():
     content = shared_history_context([]).content
     assert "nothing" in content.lower()
     assert "do not invent" in content.lower()

@@ -152,7 +152,7 @@ SOURCES = ["bbc", "hacker news"]
     "what did you read today", "any news?", "catch me up",
     "have you been reading anything",
 ])
-def test_asking_what_she_has_read_fires(said):
+def test_asking_what_he_has_read_fires(said):
     assert asks_whats_new(said, SOURCES) is not None
 
 
@@ -315,7 +315,7 @@ def test_the_headlines_are_read_out_deterministically(tmp_path):
     assert store.untold_count() == 0
 
 
-def test_with_nothing_left_she_answers_in_her_own_voice(tmp_path):
+def test_with_nothing_left_he_answers_in_his_own_voice(tmp_path):
     """The empty case stays a prompt note — agreeing there is nothing is the easy
     direction, and it measured 6/6 honest."""
     store = _store(tmp_path)
