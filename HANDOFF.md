@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-`378ccee` · 412 tests · 9/9 smoke · Python 3.13 · `D:\New folder\jesse` ·
+`fe6593a` · 421 tests · 9/9 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -99,7 +99,7 @@ drops few-shot examples for memory questions.
 | Actions | 23 targets · search depth 4 · top-5 |
 | Knowledge | name + keyword trigger · top-2 · 800-char chunks · gate 0.46 |
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
-| Progress log | 32 entries |
+| Progress log | 33 entries |
 
 Everything sits behind `jesse/core/interfaces.py`. Swapping a model or engine is a
 config change.
@@ -113,12 +113,13 @@ config change.
   carrying a word of speech. Left in place; `--remote` still runs. **The eventual goal
   is a real phone number (VoIP)**, once everything else is solid. Do not sink more time
   into the Tailscale path.
-- **Twilio / VoIP, as of today.** Priced and designed twice. US number $1.15/mo +
-  ~$0.013/min. Indian numbers effectively unavailable (registered-address rules).
-  Rejected *not* on cost but because Twilio terminates the leg and holds call audio in
-  the clear. Landmines for whoever revives it: needs a public `wss` on 443 (a *bigger*
-  surface than Tailscale), `audioop` was removed in Python 3.13, and it would be the
-  first networking dependency. On a call, skip the wake word — the call *is* the wake.
+- **Twilio / VoIP — UNPARKED 2026-09-20 by Mithilesh, now §11.** Rejected twice
+  before, *not* on cost but because Twilio terminates the leg and holds call audio in
+  the clear. He has since decided a phone number is worth that trade; the "100% local"
+  claim in §1 no longer covers a call, and saying so is part of the job. Prices: US
+  number $1.15/mo + ~$0.013/min; Indian numbers effectively unavailable
+  (registered-address rules), so the number is US and dialling it from India is an
+  international call.
 - **GPU.** Ollama sees the GTX 1050 via Vulkan, its discovery watchdog times out, falls
   back to CPU at ~12 tok/s. Externally blocked. Timebox any attempt.
 - **qwen2.5:7b.** Grounds better than 3b, ~15s/reply on CPU. Revisit only with a GPU.
@@ -154,6 +155,7 @@ config change.
 | 8 | Skill mastery (RAG) | **done** — guidance mode not built |
 | 9 | Proactive daily learning | **done** — reactive by default |
 | 10 | Remote access | built, **PAUSED**; real goal is VoIP |
+| 11 | Phone number (Twilio) | **in progress** — see §11 |
 
 Every roadmap item is built, skipped, or parked with a reason. What is left is depth:
 the custom wake word, voice auth, GPU if hardware ever cooperates, and the rough edges
@@ -294,13 +296,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               412 tests
+tests/               421 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 9 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 412 tests, ~3s
+.venv\Scripts\python.exe -m pytest -q              # 421 tests, ~4s
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
 .venv\Scripts\python.exe -m jesse learn <name> <path> | --list | --ask "..."
@@ -365,3 +367,35 @@ and can be talked to or typed at.
 **Next:** nothing is blocking. Depth over breadth — tune the persona against real
 transcripts, widen the action registry as phrasings miss, and train "yo Jesse" when
 there is an appetite for a Colab session.
+
+---
+
+## 11. Phone number (Twilio) — in progress
+
+Unparked 2026-09-20. Goal: call a real number and talk to Jesse through the existing
+STT -> LLM -> TTS pipeline.
+
+**Done.** `jesse/remote/g711.py` — mu-law <-> PCM and 8k/16k either side of it, which
+is the `audioop` landmine cleared (removed in 3.13; written out rather than pulling in
+`audioop-lts`). Real speech survives the leg intact for Whisper, SNR 20.3 dB, most of
+that the 4 kHz band limit every phone call has. 9 tests. Nothing calls it yet.
+
+**The seam it plugs into already exists.** `SwitchingTransport` + `RemoteSource`
+(`jesse/remote/transport.py`) were built for the phone-joins-mid-session case, take
+16 kHz frames pushed in from a non-asyncio thread, and need no orchestrator changes.
+A Media Streams handler feeds them.
+
+**Not done, and the order matters.**
+
+1. **The self-echo loop (§8) must be fixed FIRST.** Measured 2026-09-20: his own voice
+   at raw RMS 13 — inaudible — amplified by a bad calibration's x30 gain, transcribed
+   back *accurately* as a user turn. A phone line is full-duplex and carries his voice
+   straight back with no `mute_input()` between him and the caller. Shipping the phone
+   over this bug means fabricated conversations on a metered line.
+2. Media Streams websocket endpoint + TwiML. **First networking dependency** (stdlib
+   has no websocket server), and a public `wss` on 443 — a *bigger* surface than the
+   Tailscale path that was paused for being too much friction.
+3. Account, number, credentials, and the test call: **Mithilesh's, not an agent's.**
+   An agent cannot open the account, buy the number, hold the auth token, or dial.
+
+On a call, skip the wake word — the call *is* the wake.
