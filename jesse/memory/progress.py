@@ -276,6 +276,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "nothing he only said in passing can end up filed as something true",
         True,
     ),
+    ProgressEntry(
+        "v2.0.1 — he learned to speak telephone", "2026-09-20",
+        "nothing he can do differently yet. Someone taught him the way a phone line "
+        "carries a voice — the thin, narrow version of speech it allows — so if he is "
+        "ever put on a call he will understand what arrives and sound like himself "
+        "going back. No number, no call, no line yet. Just the translation, sitting "
+        "ready",
+        False,
+    ),
 ]
 
 
