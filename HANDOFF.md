@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-`fe6593a` · 421 tests · 9/9 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-01 · 427 tests · 7/9 smoke (failures below) · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -296,13 +296,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               421 tests
+tests/               427 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 9 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 421 tests, ~4s
+.venv\Scripts\python.exe -m pytest -q              # 427 tests, ~10s
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
 .venv\Scripts\python.exe -m jesse learn <name> <path> | --list | --ask "..."
@@ -364,9 +364,17 @@ Against "something worth using every day": **70–80%**. He wakes, listens, reme
 keeps time, acts on the computer, reads what he is given, admits what he does not know,
 and can be talked to or typed at.
 
-**Next:** nothing is blocking. Depth over breadth — tune the persona against real
-transcripts, widen the action registry as phrasings miss, and train "yo Jesse" when
-there is an appetite for a Colab session.
+**Next:** validate the self-echo fix with the real microphone before phone access
+continues (§11). Persona tuning, registry expansion and "yo Jesse" remain later work.
+
+**Verification, 2026-10-01:** 427 unit tests passed in 10.09s; the real-stack smoke
+run passed 7/9 scenarios (647s plus model warmup). Conversation, timers, barge-in,
+wake-after-reply, actions, knowledge and remote passed. Memory extraction returned
+no facts on both attempts despite correctly transcribing the turquoise preference;
+conversation turns were persisted. Sources failed because Whisper transcribed the
+first "anything new" as "Anything mail?", so the feed parser was never triggered;
+the second utterance was transcribed correctly and the headline was read. These
+failures remain open; this run does not establish whether they predate the fix.
 
 ---
 
@@ -392,6 +400,15 @@ A Media Streams handler feeds them.
    back *accurately* as a user turn. A phone line is full-duplex and carries his voice
    straight back with no `mute_input()` between him and the caller. Shipping the phone
    over this bug means fabricated conversations on a metered line.
+   **2026-10-01:** fixed one confirmed path: the orchestrator used to collect
+   pre-roll during SPEAKING, then prepend those reply frames to the next user turn
+   even after the transport queue was flushed. THINKING/SPEAKING now clear stale
+   pre-roll; playback frames are excluded until a stop-word interruption, whose
+   subsequent words are preserved. Six regression cases failed before the change
+   and pass after it (streamed replies, alerts, playback failure, interruption,
+   and a thinking turn without speech). This is not acoustic echo cancellation:
+   delayed room echo, over-gain calibration and a full-duplex phone still need live
+   validation before this blocker can be closed.
 2. Media Streams websocket endpoint + TwiML. **First networking dependency** (stdlib
    has no websocket server), and a public `wss` on 443 — a *bigger* surface than the
    Tailscale path that was paused for being too much friction.

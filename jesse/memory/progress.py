@@ -285,6 +285,14 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "ready",
         False,
     ),
+    ProgressEntry(
+        "v2.0.2 — his replies stay out of the next turn", "2026-10-01",
+        "he was keeping microphone audio from his own replies and slipping it into "
+        "the next thing Mithilesh said. That buffer now starts clean, and when "
+        "Mithilesh interrupts, the words after the stop word are kept. Echo in the "
+        "room still needs a live check before anyone calls this ready for a phone",
+        False,
+    ),
 ]
 
 

@@ -300,13 +300,20 @@ class Orchestrator:
     # -- state transitions -------------------------------------------------
 
     def _enter(self, state: ConversationState) -> None:
+        if state in (ConversationState.THINKING, ConversationState.SPEAKING):
+            # The previous user turn is already captured. Do not carry it (or
+            # playback leaking into the mic) into the next listening window.
+            self._preroll.clear()
         self.state = state
         self.states_visited.append(state)
         if self._on_state_change is not None:
             self._on_state_change(state)
 
     async def _handle_frame(self, frame: bytes) -> None:
-        self._preroll.append(frame)  # always keep the most recent audio for pre-roll
+        if self.state in (ConversationState.IDLE, ConversationState.LISTENING) or (
+            self.state is ConversationState.SPEAKING and self._barge_in
+        ):
+            self._preroll.append(frame)
 
         # Typed input rides the SAME loop as audio, so a message can arrive while the
         # voice loop is live. Ignored mid-turn: the reply in flight finishes first.
@@ -356,6 +363,10 @@ class Orchestrator:
             # Half-duplex: full STT is gated, but the stop-word stays live.
             if stopped and not self._interrupt.is_set():
                 print("  [interrupt] stop-word heard — cutting the reply short")
+                # Only the interruption and the words that follow belong to the
+                # user. Earlier speaking frames may be Jesse's own voice.
+                self._preroll.clear()
+                self._preroll.append(frame)
                 self._barge_in = True
                 self._interrupt.set()
         # THINKING: transient; frames are ignored while the LLM runs.
