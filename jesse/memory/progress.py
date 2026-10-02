@@ -293,6 +293,24 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "room still needs a live check before anyone calls this ready for a phone",
         False,
     ),
+    ProgressEntry(
+        "v2.0.3 — he remembers what Mithilesh actually said", "2026-10-01",
+        "his own replies used to get mixed into deciding what to remember. Now "
+        "only Mithilesh's words go into that decision, even after a restart. The "
+        "facts come back in a format he can read, and turns that start with an "
+        "imagined situation stay in the conversation without becoming facts. He "
+        "can still miss things; this does not make his memory perfect",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.4 — he can follow a corrected memory", "2026-10-02",
+        "asked about a plan, he was reading out the clock even though the plan was "
+        "saved. He now follows the named memory back to Mithilesh's own words and "
+        "uses explicit corrections to a misheard word. He keeps the original "
+        "record instead of merging different memories by guesswork. And if his "
+        "brain is offline at startup, he says to start it before opening the mic",
+        True,
+    ),
 ]
 
 

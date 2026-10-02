@@ -409,6 +409,15 @@ def _pair_cmd(argv: list[str]) -> int:
 
 
 def _run(argv: list[str]) -> int:
+    if "--ollama" in argv:
+        from jesse.core.interfaces import LLMError
+        from jesse.llm.ollama import OllamaLLM
+        try:
+            OllamaLLM().check_available()
+        except LLMError as exc:
+            print(f"\n  {exc}\n")
+            return 1
+
     from jesse.audio.calibrate import calibrate
     from jesse.audio.devices import DeviceError
 

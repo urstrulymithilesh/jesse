@@ -49,7 +49,7 @@ from jesse.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
 from jesse.audio.vad import EnergyVad
 from jesse.audio.wakeword import OpenWakeWordDetector
 from jesse.config import CONFIG
-from jesse.core.interfaces import Message
+from jesse.core.interfaces import Fact, Message
 from jesse.core.state import ConversationState
 from jesse.llm.ollama import OllamaLLM
 from jesse.actions.parse import UnknownTarget, parse_action_command
@@ -60,7 +60,7 @@ from jesse.digest.feeds import parse_feed
 from jesse.digest.store import DigestStore
 from jesse.memory.corpus import CorpusStore, subjects_mentioned
 from jesse.memory.embedder import FastEmbedEmbedder
-from jesse.memory.extraction import FactExtractor
+from jesse.memory.extraction import FACT_SCHEMA, FactExtractor
 from jesse.memory.store import SqliteMemoryStore
 from jesse.remote.auth import RemoteAuth, load_or_create
 from jesse.remote.server import start as start_remote
@@ -212,7 +212,7 @@ def _build(transport, db: Path, *, with_memory=True, with_scheduler=False, corpu
     store = extractor = scheduler = None
     if with_memory:
         store = SqliteMemoryStore(db, FastEmbedEmbedder(), log_path=db.parent / "smoke-log.txt")
-        extractor = FactExtractor(llm)
+        extractor = FactExtractor(OllamaLLM(response_schema=FACT_SCHEMA, temperature=0))
     orch = Orchestrator(
         transport=transport,
         wake=OpenWakeWordDetector(CONFIG.wake.model),
@@ -446,7 +446,11 @@ async def scenario_action(mouth: Mouth, db: Path) -> Result:
     frames = mouth.frames("hey jarvis") + mouth.frames("open Photoshop")
     transport = ScriptedTransport(frames)
     orch, store, _ = _build(transport, db)
-    await orch.run()
+    try:
+        await orch.run()
+    finally:
+        if store:
+            store.close()
 
     user_turns = [m for m in orch._history if m.role == "user"]
     if not user_turns:
@@ -469,13 +473,12 @@ async def scenario_action(mouth: Mouth, db: Path) -> Result:
     checks.append(f"he said: {replies[0].content[:64]!r}")
     # The refusal is deterministic (a probed 3B said "I can open Photoshop", dropping
     # the negation), so the check is exact: his fixed line, negation intact.
-    if "don't have photoshop" not in reply:
+    expected = f"i don't have {cmd.name} — that's not something i can open."
+    if reply != expected:
         return Result("action", False,
                       "the deterministic refusal was not what he said",
                       checks=checks)
     checks.append("he refused in his own fixed words, negation intact")
-    if store:
-        store.close()
     return Result("action", True, "unknown app admitted, not agreed to", checks=checks)
 
 
@@ -736,9 +739,51 @@ async def scenario_remote(mouth: Mouth, db: Path) -> Result:
             store.close()
 
 
+async def scenario_personal_recall(mouth: Mouth, db: Path) -> Result:
+    """A named plan, a misheard activity, and its correction survive a restart."""
+    store = SqliteMemoryStore(db, FastEmbedEmbedder())
+    for fact in (
+        Fact(subject="birthday plans", text="the user wants to be guide-eyeing next month",
+             confidence=0.8),
+        Fact(subject="skydiving", text="the user wants to do skydiving", confidence=0.8),
+        Fact(subject="date and time", text="the current date and time is Sunday, 20 September 2026, 01:17",
+             confidence=0.8),
+    ):
+        store.add_fact(fact)
+    for message in (
+        Message("user", "Next month my birthday is coming up and I want to be guide-eyeing."),
+        Message("assistant", "You have no birthday plan."),
+        Message("user", "That's not guide-eyeing, it's sky-diving."),
+    ):
+        store.append_turn(message)
+    store.close()
+    transport = ScriptedTransport([])
+    orch, store, _ = _build(transport, db)
+    # This is a recall check, not a new fact-teaching turn. Keep its seeded records
+    # intact so the assertions can also catch accidental rewriting/consolidation.
+    orch.extractor = None
+    try:
+        await orch._handle_utterance("what is my birthday plan?", via="text")
+        answer = orch._history[-1].content
+        normalized = answer.lower().replace("-", "")
+        checks = [f"real model answered: {answer!r}",
+                  "facts and correction read through a fresh database connection"]
+        if "skydiving" not in normalized or "guide" in normalized:
+            return Result("personal-recall", False, "corrected plan was not used", checks=checks)
+        if "01:17" in answer or "2026" in answer:
+            return Result("personal-recall", False, "clock contaminated the plan", checks=checks)
+        if not any("guide-eyeing" in f.text for f in store.all_facts()):
+            return Result("personal-recall", False, "original fact was rewritten", checks=checks)
+        return Result("personal-recall", True, "corrected plan recalled without clock leakage",
+                      checks=checks)
+    finally:
+        store.close()
+
+
 SCENARIOS = [
     ("conversation", scenario_conversation),
     ("memory", scenario_memory),
+    ("personal-recall", scenario_personal_recall),
     ("timer", scenario_timer),
     ("barge-in", scenario_barge_in),
     ("wake-after-reply", scenario_wake_after_reply),

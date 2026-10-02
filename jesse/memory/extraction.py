@@ -32,19 +32,50 @@ Output ONLY a JSON array (no prose, no markdown, no code fence) of objects with 
 Only include DURABLE personal facts the USER revealed about THEMSELVES: names, relationships,
 preferences, routines, plans, where they live or work, and the like. Do NOT include chit-chat,
 your own replies, momentary feelings, or anything you guessed but weren't told. If there are
-no such facts, output exactly [].
+no such facts, output exactly []. Hypothetical situations and conditional wishes are
+not actual plans or facts. Do not turn a question into a personal preference.
 """
+
+# Enforced by the local reasoning backend, then checked again by the parser.
+# https://docs.ollama.com/capabilities/structured-outputs
+FACT_SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "subject": {"type": "string", "minLength": 1},
+            "text": {"type": "string", "minLength": 1},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        },
+        "required": ["subject", "text", "confidence"],
+        "additionalProperties": False,
+    },
+}
+
+# A conditional opening is not evidence that the imagined event will happen.
+# Conservatively skip the turn: even schema-constrained generation at temperature
+# zero promoted "If I moved ..." into memory in live probes. The full turn still
+# lives in conversation history. This can miss real facts later in a mixed turn.
+_HYPOTHETICAL_START = re.compile(
+    r"^\s*(?:what\s+if|if|suppose|supposing|imagine|let['’]s\s+pretend)\b", re.IGNORECASE,
+)
 
 
 class FactExtractor:
-    """Turns a conversation snippet into raw extraction JSON via the LLM. Kept separate
-    from parsing so the (network) call and the (pure) parse are testable in isolation."""
+    """Extract from the user's words only, never from Jesse's generated reply.
+
+    A reply can deny a fact or invent one. Passing it alongside the user statement
+    lets either affect durable memory, even with the prompt's attribution rule.
+    """
 
     def __init__(self, llm: LLM) -> None:
         self._llm = llm
 
-    def extract(self, exchange: str) -> str:
-        messages = [Message("system", EXTRACTION_PROMPT), Message("user", exchange)]
+    def extract(self, user_text: str) -> str:
+        if _HYPOTHETICAL_START.match(user_text):
+            return "[]"
+        messages = [Message("system", EXTRACTION_PROMPT),
+                    Message("user", f"The user said: {user_text}")]
         return "".join(self._llm.chat(messages, stream=False))
 
 

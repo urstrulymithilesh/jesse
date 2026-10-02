@@ -22,13 +22,15 @@ from jesse.core.interfaces import LLMError, Message
 
 
 class OllamaLLM:
-    def __init__(self, *, host: str | None = None, model: str | None = None) -> None:
+    def __init__(self, *, host: str | None = None, model: str | None = None,
+                 response_schema: dict | None = None, temperature: float | None = None) -> None:
         cfg = CONFIG.reasoning
         self._host = host or cfg.ollama_host
         self._model = model or cfg.model
         self._keep_alive = cfg.keep_alive          # int -1
         self._num_ctx = cfg.num_ctx
-        self._temperature = cfg.temperature
+        self._temperature = cfg.temperature if temperature is None else temperature
+        self._response_schema = response_schema
         self._timeout = cfg.request_timeout
 
     @property
@@ -41,14 +43,31 @@ class OllamaLLM:
         )
         return urllib.request.urlopen(req, timeout=self._timeout)
 
+    def check_available(self, *, timeout: float = 2.0) -> None:
+        """Cheap startup probe; no generation, model loading or retry delay."""
+        try:
+            with urllib.request.urlopen(f"{self._host}/api/tags", timeout=timeout) as response:
+                data = json.load(response)
+            if not isinstance(data, dict) or not isinstance(data.get("models"), list):
+                raise ValueError("unexpected model-list response")
+        except (OSError, ValueError) as exc:
+            raise LLMError(
+                f"Ollama is not available at {self._host}. Start Ollama first "
+                "(open the Ollama app or run 'ollama serve'), then start Jesse again. "
+                f"Details: {exc}"
+            ) from exc
+
     def chat(self, messages: Sequence[Message], *, stream: bool = True) -> Iterator[str]:
-        body = json.dumps({
+        payload = {
             "model": self._model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "stream": stream,
             "keep_alive": self._keep_alive,
             "options": {"num_ctx": self._num_ctx, "temperature": self._temperature},
-        }).encode()
+        }
+        if self._response_schema is not None:
+            payload["format"] = self._response_schema
+        body = json.dumps(payload).encode()
 
         resp = None
         last: LLMError | None = None

@@ -7,12 +7,14 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-01 · 427 tests · 7/9 smoke (failures below) · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-02 · 468 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
 
 ## 0. Standing workflow — do this without being asked
+
+**Branch policy: `main` only.** Mithilesh asked to remove all other branches.
 
 **Skills, always on:** `caveman` (terse), `ponytail` (laziest thing that works, stdlib
 first), `gstack`, `karpathy-guidelines` (state assumptions, simplest solution, surgical
@@ -296,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               427 tests
+tests/               468 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 9 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 427 tests, ~10s
+.venv\Scripts\python.exe -m pytest -q              # 468 tests
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
 .venv\Scripts\python.exe -m jesse learn <name> <path> | --list | --ask "..."
@@ -416,3 +418,94 @@ A Media Streams handler feeds them.
    An agent cannot open the account, buy the number, hold the auth token, or dial.
 
 On a call, skip the wake word — the call *is* the wake.
+
+---
+
+## 12. Memory extraction follow-up — 2026-10-01
+
+The earlier memory smoke failure reproduced with the real model: a user stated the
+turquoise preference, Jesse's reply denied remembering it, and extraction of the
+combined exchange returned `[]`. Passing just the labelled user statement recovered
+the fact in three consecutive probes. A separate fact came back as malformed JSON;
+a conditional move was also wrongly accepted as a durable memory.
+
+Changes on `main` (included with the October 2 recall fix):
+
+- Live and catch-up fact extraction now receive only the user's statement. Both
+  conversation turns are still persisted, and episodic summaries still see both.
+- Extraction uses the same local Ollama model with temperature zero and a fact-array
+  JSON schema. Ordinary chat keeps its existing temperature and free-text output;
+  the orchestrator's existing lock still serializes all model calls. See
+  [Ollama's structured-output contract](https://docs.ollama.com/capabilities/structured-outputs).
+- An explicit hypothetical opening (`if`, `what if`, `suppose`, `supposing`,
+  `imagine`, `let's pretend`) skips fact extraction in code. The model ignored the
+  prompt restriction even with the schema. This intentionally sacrifices real facts
+  later in a mixed conditional turn; it does not cover every possible hypothetical.
+
+Limits: JSON shape is not factual accuracy. A bare "yes" lacks enough context for a
+new durable fact; the saved conversation remains available. Existing facts and
+already-processed exchanges are not rewritten or re-extracted.
+
+Validation: 444 unit tests passed in 3.68s (17 new cases), including source isolation
+on both extraction paths, conditional openings, real-plan pass-through, constrained
+request serialization and unchanged streaming chat. Local-model probes retained
+the color, sister, swimming routine and actual moving plan; the greeting and
+preference question returned no facts. The explicit hypothetical is rejected by
+the code guard. The previously failing real-stack memory scenario passed on its
+first attempt, storing and recalling the correct color through a fresh connection.
+
+## 13. Birthday-plan recall and Ollama startup — 2026-10-02
+
+**Reproduced exactly** from a read-only snapshot of the reported session: asking
+"what is my birthday plan?" produced the current date and time. The birthday-plan
+fact ranked first, a stale clock fact second, and the corrected activity ninth
+(outside top-3). Fact injection omitted subject labels, and specific personal
+questions did not enter recall mode. The recent 12-turn context also missed the
+earlier explicit transcription correction.
+
+The four fragmented subjects had pairwise cosine similarities 0.503–0.624; this
+is **not a reason to lower the 0.88 dedupe threshold**. A plan, an activity and a
+generic desire are not interchangeable slots. No facts were consolidated or edited
+in the live database.
+
+**Fix:** named personal questions prefer literal subject/text matches over unrelated
+semantic neighbours. They retain subject labels, omit the clock and unrelated
+assistant history, and use recall mode. A matching retained fact can bring in up to
+six nearby user statements (1600 characters, five-minute window) from the latest
+matching statement. An explicit "that's not X, it's Y" correction can replace X
+in a temporary copy of a conversational fact; protected identity is unchanged.
+Bare "I meant Y" is not assigned an antecedent by guesswork. These records are
+read at query time, so existing memories work without re-extraction or reindexing.
+
+Prompting alone still picked the old misheard word in two of three probes. Resolving
+the explicit correction in code produced the corrected activity in all three final
+local-model probes. This is a measured improvement, not a universal grounding claim.
+
+**Forgetting boundary:** after a successful forget, earlier transcript material is
+excluded from supplemental recall, even for surviving topics. This conservatively
+avoids reconstituting a deleted detail through adjacent statements. Earlier forget
+operations made before this boundary existed did not record a transcript cutoff.
+
+**Startup:** `run --ollama` performs one `/api/tags` GET with a two-second timeout
+before claiming audio or starting UI servers. An unreachable service prints "Start
+Ollama first" and exits. It does not load a model or prove generation will succeed;
+the existing honest in-turn error fallback remains necessary. Stub mode is unchanged.
+
+**Regression coverage:** real SQLite restart, deliberately wrong vector ranking,
+correction without record mutation, bounded evidence, forgetting, personal/clock
+routing and preflight failures. Added `personal-recall` to the smoke suite, which now
+has ten scenarios. All live-database investigation used read-only connections;
+model replays used temporary copies or synthetic fixtures.
+
+The first smoke run also exposed a harness bug: Whisper's "Photo Shop" correctly
+produced a refusal for "photo shop", but the assertion required "photoshop" and its
+failure path leaked the SQLite handle. The assertion now checks the exact refusal
+for the parsed target, and the store closes in `finally`. Four tests cover both
+spellings, a genuine refusal failure and cleanup. Named-document routing also has
+a regression test so personal wording does not steal a knowledge question.
+
+**Final verification:** 468 unit tests passed in 4.30s; all 10 real-stack smoke
+scenarios passed in 221s plus 7s warmup. The new personal-recall scenario answered
+"You want to be sky-diving next month." Duplicate-definition/undefined-name lint
+and `git diff --check` also passed. The successful full rerun includes the corrected
+action assertion and database cleanup.

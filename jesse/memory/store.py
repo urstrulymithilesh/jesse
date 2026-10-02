@@ -23,6 +23,7 @@ import sqlite_vec
 
 from jesse.config import CONFIG
 from jesse.core.interfaces import PROTECTED_ORIGINS, Embedder, Fact, Message
+from jesse.memory.recall import asks_personal_memory, matching_facts, topic_words
 
 
 def _now() -> str:
@@ -350,6 +351,13 @@ class SqliteMemoryStore:
         placeholders = ",".join("?" * len(ids))
         self._conn.execute(f"DELETE FROM facts WHERE id IN ({placeholders})", ids)
         self._drop_vectors(ids)
+        # Do not reconstruct a forgotten detail from adjacent older statements.
+        # Keep the transcript, but retire it as supplemental fact-recall evidence.
+        latest_turn = self._conn.execute("SELECT COALESCE(MAX(id), 0) FROM turns").fetchone()[0]
+        self._conn.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES('recall_evidence_floor', ?)",
+            (str(latest_turn),),
+        )
         self._conn.commit()
         for fact in gone:
             self._log("FORGOT", fact)
@@ -394,7 +402,49 @@ class SqliteMemoryStore:
         # When asked about the past, lead with history so the old-version facts actually
         # surface (a current 'self' fact would otherwise out-rank them by similarity).
         ordered = (history + other) if include_history else other
+        if asks_personal_memory(query):
+            # Subject labels can be the only link to the question after a bad STT
+            # transcription. Do not let unrelated semantic neighbours fill the
+            # context when an explicit topic match exists.
+            matched = matching_facts(query, self.all_facts())
+            if matched:
+                ranked = {f.text: i for i, f in enumerate(ordered)}
+                matched.sort(key=lambda f: ranked.get(f.text, len(ordered)))
+                return matched[:k]
         return ordered[:k]
+
+    def recall_evidence(self, query: str, *, limit: int = 6,
+                        char_budget: int = 1600) -> list[Message]:
+        """User statements near a retained topic, including immediate corrections.
+
+        Read-only and bounded. Assistant replies are never evidence. We require a
+        surviving matching fact, so an empty/forgotten topic cannot resurrect itself
+        from history. A successful forget also puts older transcripts out of bounds.
+        """
+        if limit <= 0 or not matching_facts(query, self.all_facts()):
+            return []
+        floor = int(self.get_meta("recall_evidence_floor") or 0)
+        rows = self._conn.execute(
+            "SELECT id, content, ts FROM turns WHERE role='user' AND id > ? ORDER BY id",
+            (floor,),
+        ).fetchall()
+        words = topic_words(query)
+        anchors = [i for i, (_, text, _) in enumerate(rows)
+                   if words & topic_words(text) and not asks_personal_memory(text)
+                   and not text.strip().endswith("?")]
+        if not anchors:
+            return []
+        start = anchors[-1]
+        started = datetime.fromisoformat(rows[start][2])
+        evidence, used = [], 0
+        for _, text, ts in rows[start:start + limit]:
+            if (datetime.fromisoformat(ts) - started).total_seconds() > 300:
+                break
+            if used + len(text) > char_budget:
+                break
+            evidence.append(Message("user", text))
+            used += len(text)
+        return evidence
 
     # -- turns -------------------------------------------------------------
 

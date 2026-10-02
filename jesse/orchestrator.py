@@ -37,7 +37,7 @@ from jesse.core.interfaces import (
 from jesse.config import CONFIG
 from jesse.context import (build_messages, digest_context, episode_context,
                           knowledge_context, next_step_nudge, now_context,
-                          self_state_context, shared_history_context)
+                          self_state_context, shared_history_context, personal_memory_context)
 from jesse.core.state import ConversationState, disposition_for
 from jesse.audio.frames import SAMPLE_RATE, ms_to_chunks
 from jesse.audio.vad import Vad
@@ -46,6 +46,7 @@ from jesse.digest.feeds import FeedError, fetch_feed
 from jesse.digest.parse import asks_whats_new
 from jesse.memory.corpus import subjects_mentioned
 from jesse.memory.extraction import FactExtractor, parse_extracted_facts
+from jesse.memory.recall import asks_personal_memory, apply_explicit_corrections
 from jesse.actions.parse import (MediaCommand, OpenCommand, UnknownTarget,
                                 looks_like_an_action, parse_action_command)
 from jesse.actions.run import ActionError, find_files, media_key, open_target
@@ -440,7 +441,8 @@ class Orchestrator:
                 self._engaged = False
                 self._go_quiet = True
                 print("  [listening] told to stand down — wake word needed again")
-            extra: list[Message] = [now_context()]     # he always knows the real time
+            personal_recall = False
+            extra: list[Message] = [now_context()]
             recall_mode = False
             if _asks_about_self(text):
                 from jesse.memory.progress import latest, previous
@@ -575,6 +577,15 @@ class Orchestrator:
                         return
                 if note is not None:
                     extra.append(Message("system", note))
+            # Give named documents, temporal queries and deterministic tools their
+            # existing precedence. A question containing 'my' can still be about
+            # a document or a timer rather than a personal fact.
+            if asks_personal_memory(text) and not recall_mode and len(extra) == 1:
+                personal_recall = recall_mode = True
+                get_evidence = getattr(self.store, "recall_evidence", None)
+                evidence = get_evidence(text) if get_evidence is not None else []
+                facts = apply_explicit_corrections(facts, evidence)
+                extra = [personal_memory_context(facts, evidence)]
             # Opt-in, and last, so it never displaces what he actually asked about.
             # Skipped in recall mode: an accurate recitation is not the place to bolt
             # a "by the way" onto.
@@ -586,7 +597,8 @@ class Orchestrator:
             # the model recites them back as history. Accuracy over register here.
             prompt = recall_prompt() if recall_mode else self._system_prompt
             messages = build_messages(
-                prompt, facts, self._history,
+                prompt, [] if personal_recall else facts,
+                [Message("user", text)] if personal_recall else self._history,
                 recent_limit=CONFIG.memory.recent_turns,
                 char_budget=CONFIG.memory.context_char_budget,
                 extra_system=extra,
@@ -753,9 +765,8 @@ class Orchestrator:
         uid = self.store.append_turn(Message("user", user_text))
         aid = self.store.append_turn(Message("assistant", reply))
         if self.extractor is not None:
-            exchange = f"The user said: {user_text}\nYou replied: {reply}"
             self._extract_task = asyncio.create_task(
-                self._extract_facts(exchange, turn_ids=(uid, aid)))
+                self._extract_facts(user_text, turn_ids=(uid, aid)))
 
     @property
     def remote_live(self) -> bool:
@@ -1140,11 +1151,10 @@ class Orchestrator:
             return
         print(f"  [memory] catching up on {len(pending)} unfinished extraction(s) "
               "from earlier…")
-        for uid, aid, user_text, reply in pending:
-            exchange = f"The user said: {user_text}\nYou replied: {reply}"
-            await self._extract_facts(exchange, turn_ids=(uid, aid), catchup=True)
+        for uid, aid, user_text, _reply in pending:
+            await self._extract_facts(user_text, turn_ids=(uid, aid), catchup=True)
 
-    async def _extract_facts(self, exchange: str, *, turn_ids=(),
+    async def _extract_facts(self, user_text: str, *, turn_ids=(),
                              catchup: bool = False) -> None:
         assert self.store is not None and self.extractor is not None
         debug = CONFIG.memory.debug_extraction
@@ -1159,9 +1169,9 @@ class Orchestrator:
                 if self.state in (ConversationState.THINKING, ConversationState.SPEAKING):
                     print("  [memory] skipped — a new turn started before extraction could run")
                     return
-                raw = await asyncio.to_thread(self.extractor.extract, exchange)
+                raw = await asyncio.to_thread(self.extractor.extract, user_text)
             if debug:
-                print(f"  [memory:debug] asked: {exchange!r}")
+                print(f"  [memory:debug] user statement: {user_text!r}")
                 print(f"  [memory:debug] model returned: {raw!r}")
             facts = parse_extracted_facts(raw, min_confidence=CONFIG.memory.min_fact_confidence)
             if debug:

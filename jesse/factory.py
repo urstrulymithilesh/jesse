@@ -60,7 +60,7 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
     if use_ollama:
         from jesse.llm.ollama import OllamaLLM
         from jesse.memory.embedder import FastEmbedEmbedder
-        from jesse.memory.extraction import FactExtractor
+        from jesse.memory.extraction import FACT_SCHEMA, FactExtractor
         from jesse.memory.store import SqliteMemoryStore
         llm = OllamaLLM()
         brain_label = f"Ollama/{CONFIG.reasoning.model}"
@@ -76,7 +76,9 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
         n = seed_if_needed(store)      # first run: plant core + self facts
         if n:
             print(f"  [memory] seeded {n} core/self facts (first run)")
-        extractor = FactExtractor(llm)
+        # Same local model and orchestrator lock; only the extraction request's
+        # output format and sampling differ from ordinary conversation.
+        extractor = FactExtractor(OllamaLLM(response_schema=FACT_SCHEMA, temperature=0))
         episodes = EpisodeStore(CONFIG.memory.db_path, FastEmbedEmbedder())
         if CONFIG.digest.enabled:
             from jesse.digest.store import DigestStore
