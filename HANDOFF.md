@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-03 · 484 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-03 · 501 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -298,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               484 tests
+tests/               501 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 10 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 484 tests
+.venv\Scripts\python.exe -m pytest -q              # 501 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -367,8 +367,10 @@ Against "something worth using every day": **70–80%**. He wakes, listens, reme
 keeps time, acts on the computer, reads what he is given, admits what he does not know,
 and can be talked to or typed at.
 
-**Next:** validate the self-echo fix with the real microphone before phone access
-continues (§11). Persona tuning, registry expansion and "yo Jesse" remain later work.
+**Next:** use the measured gain/threshold pair in a normal local conversation (§16).
+The calibrated echo/endpoint probe passed one setup; full-duplex phone audio still
+needs its own echo-control strategy before phone access ships (§11). Persona tuning,
+registry expansion and "yo Jesse" remain later work.
 
 **Verification, 2026-10-01:** 427 unit tests passed in 10.09s; the real-stack smoke
 run passed 7/9 scenarios (647s plus model warmup). Conversation, timers, barge-in,
@@ -414,6 +416,9 @@ A Media Streams handler feeds them.
    validation before this blocker can be closed.
    **2026-10-03:** callbacks captured before unmute but delivered after its queue
    flush are now discarded; five transport regressions cover this second path (§14).
+   A live calibrated local test later passed three reply tails and one spoken
+   follow-up at gain 14.8 / threshold 1004 (§16). This is half-duplex local evidence,
+   not evidence for a full-duplex phone line.
 2. Media Streams websocket endpoint + TwiML. **First networking dependency** (stdlib
    has no websocket server), and a public `wss` on 443 — a *bigger* surface than the
    Tailscale path that was paused for being too much friction.
@@ -582,3 +587,50 @@ Validation: 484 unit tests passed in 6.13s, including eleven diagnostic cases;
 all ten real-stack smoke scenarios passed in 213s plus 7s warmup. Changed-file
 lint and `git diff --check` passed. README documents the command and how to use a
 calibrated pair. No production memory, gain settings or volume were changed.
+
+## 16. Speech-calibrated local check — 2026-10-03
+
+Mithilesh was using a **wired headset** and initially missed part of the speaking
+window. That first sample was correctly rejected (speech P75 12.6, peak 163.7 RMS).
+Windows lists no separate wired-headset input: these measurements used Realtek MME
+input 1 and output 4. The endpoint name is Microphone Array; the physical mic path
+behind the jack/driver was not independently established. Do not assume AirPods or
+DJI merely because their disconnected WDM-KS endpoints appear in the device list.
+
+A second spoken cue and eight-second speech window captured sustained speech,
+starting about two seconds into the window. Room P90 was 0.49 RMS; speech P75 was
+169.21, peak 820.28. The existing calibration algorithm accepted **gain 14.8,
+threshold 1004**. No algorithm, configuration or Windows volume was changed.
+
+Using that pair immediately afterwards:
+
+| Window | Post-gain peak RMS | Speech frames | Endpoint |
+|---|---|---|---|
+| Tail 1 | 79.5 | 0 | no |
+| Tail 2 | 2844.3 | 3 | no |
+| Tail 3 | 11.8 | 0 | no |
+| Spoken follow-up | 10793.1 | 22 | yes |
+
+None of the three tails met the four-frame speech minimum. The requested follow-up
+sentence produced an endpoint during its nine-second window. This checks levels
+and endpointing, not the accuracy of a transcript; PCM was discarded without STT,
+memory writes or saving audio. Tail 2's brief excursion is not an echo-free claim.
+Local half-duplex validation now has one successful calibrated sample; other
+volumes, physical mic paths and full-duplex telephone echo remain unverified.
+
+`run` previously accepted gain alone. It now accepts `--threshold` as well, so this
+pair can actually be reused without editing config:
+
+```powershell
+.venv\Scripts\python.exe -m jesse run --ollama --device 1 --gain 14.8 --threshold 1004
+```
+
+Either override selects manual mode, skipping auto-calibration; omitted values keep
+configured defaults. Use both measured values together. Invalid, missing, non-finite
+or non-positive values exit before Ollama, the instance claim, UI or microphone
+startup. No-override auto-calibration and `--no-calibrate` behavior are unchanged.
+
+Validation: 501 tests passed in 6.31s, including seventeen CLI cases for the measured
+pair, single overrides, automatic/default behavior and early invalid-value rejection.
+All ten real-stack smoke scenarios passed in 216s plus 7s warmup. Changed-file
+duplicate-definition/undefined-name lint and `git diff --check` passed.

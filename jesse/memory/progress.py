@@ -329,6 +329,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "and leaves the calibration alone",
         False,
     ),
+    ProgressEntry(
+        "v2.0.7 — a measured mic setup can be reused", "2026-10-03",
+        "Mithilesh's speaking level was measured, then checked against his reply "
+        "tails. None of those three tails started a turn, and the follow-up "
+        "sentence did. He can now start with both measured settings together, "
+        "instead of changing the gain while leaving the speech threshold behind. "
+        "This was one local setup, not proof that a phone call is ready",
+        False,
+    ),
 ]
 
 

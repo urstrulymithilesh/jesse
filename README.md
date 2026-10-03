@@ -113,6 +113,17 @@ Then talk to him:
 python -m jesse run --ollama          # add --device N to pick a specific mic
 ```
 
+To reuse a measured calibration, supply both numbers (these are example values):
+
+```bash
+python -m jesse run --ollama --device 1 --gain 14.8 --threshold 1004
+```
+
+Either `--gain` or `--threshold` selects manual audio settings and skips startup
+calibration. A value you omit keeps its configured default, so use the measured
+pair together. Both must be finite numbers greater than zero. These overrides
+last for that run; they do not rewrite configuration.
+
 Useful extras: `python -m jesse memory` (inspect what he remembers),
 `python -m jesse devices` (list mics), `python -m jesse say "text"` (test his voice),
 `python -m jesse digest` (what he has read from your sources).

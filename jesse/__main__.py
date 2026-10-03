@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -408,7 +409,26 @@ def _pair_cmd(argv: list[str]) -> int:
     return 0
 
 
+def _positive_audio_override(argv: list[str], flag: str) -> float | None:
+    if flag not in argv:
+        return None
+    try:
+        value = float(_flag_value(argv, flag))
+    except (TypeError, ValueError):
+        raise ValueError(f"{flag} requires a finite number greater than zero") from None
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"{flag} requires a finite number greater than zero")
+    return value
+
+
 def _run(argv: list[str]) -> int:
+    try:
+        gain_override = _positive_audio_override(argv, "--gain")
+        threshold_override = _positive_audio_override(argv, "--threshold")
+    except ValueError as exc:
+        print(f"\nAudio options: {exc}")
+        return 2
+
     if "--ollama" in argv:
         from jesse.core.interfaces import LLMError
         from jesse.llm.ollama import OllamaLLM
@@ -478,12 +498,15 @@ def _run(argv: list[str]) -> int:
         scheme = "https" if tls else "http"
         remote_url = f"{scheme}://{remote_host}:{remote_port}/?t={token}"
 
-    # Gain / threshold: an explicit --gain wins; else auto-calibrate (unless off).
-    gain_override = _flag_value(argv, "--gain")
+    # Either explicit audio setting selects manual mode. Unspecified values keep
+    # their configured defaults; supplying the calibrated pair avoids guessing.
     eff_device = _effective_device(device)
     try:
-        if gain_override is not None:
-            orch.transport.gain = float(gain_override)
+        if gain_override is not None or threshold_override is not None:
+            if gain_override is not None:
+                orch.transport.gain = gain_override
+            if threshold_override is not None:
+                orch.vad.set_threshold(threshold_override)
         elif CONFIG.audio.auto_calibrate and "--no-calibrate" not in argv:
             result = calibrate(eff_device)
             if result.ok:
