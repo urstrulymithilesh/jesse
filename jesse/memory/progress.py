@@ -320,6 +320,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "afterwards still needs a live check",
         False,
     ),
+    ProgressEntry(
+        "v2.0.6 — his echo can be measured", "2026-10-03",
+        "there is now a short check that plays his voice and measures what reaches "
+        "the microphone after he stops. At normal gain these samples stayed quiet; "
+        "with the mic boosted thirty times, some tails could start a false turn. "
+        "That is a measured limit, not a fix. The check saves no microphone audio "
+        "and leaves the calibration alone",
+        False,
+    ),
 ]
 
 

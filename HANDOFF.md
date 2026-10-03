@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-03 · 473 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-03 · 484 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -298,13 +298,14 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               468 tests
+tests/               484 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
-.venv\Scripts\python.exe -m jesse smoke            # 9 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 468 tests
+.venv\Scripts\python.exe -m jesse smoke            # 10 scenarios, real stack, ~4min
+.venv\Scripts\python.exe -m pytest -q              # 484 tests
+.venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
 .venv\Scripts\python.exe -m jesse learn <name> <path> | --list | --ask "..."
@@ -538,3 +539,46 @@ after reopening (room reverberation or device buffering), calibration gain and
 full-duplex phone echo still require live hardware validation. The headless smoke
 suite does not exercise actual PortAudio devices; phone integration remains blocked
 on that validation.
+
+## 15. Live echo measurement — 2026-10-03
+
+`diagnose.py echo` now plays three fixed Piper phrases through LocalAudioTransport,
+measures two seconds of ambient sound and three seconds after each reply, and runs
+the real EnergyVad on each phase independently. It uses configured defaults unless
+device, output-device, gain or threshold are supplied. Use the gain/threshold pair
+printed by calibration when checking a daily setup. A 60-second asyncio timeout
+bounds the capture/play exercise; model loading/synthesis happens beforehand and
+native blocking audio calls still depend on the driver returning.
+
+The command takes Jesse's existing instance claim, releases it on exit, closes
+capture on failures/cancellation and unmutes after playback. It retains only level
+and VAD statistics, never recorded audio, transcripts or memory. It changes neither
+calibration nor Windows volume. Missing frames or all-zero capture are inconclusive.
+Enough tail speech is flagged as a risk even without a completed endpoint: silence
+arriving after the measurement window can finish that turn.
+
+Measured on Realtek MME input 1 and speakers 4 at the existing system volume:
+
+| Gain / threshold | Tail peak RMS, trials 1 / 2 / 3 | Tail speech frames | Completed endpoints |
+|---|---|---|---|
+| 30 / 150 (stress case) | 779.6 / 741.8 / 36.6 | 17 / 5 / 0 | 0 / 0 / 0 |
+| 1 / 150 (configured defaults) | 2.3 / 0.7 / 2.0 | 0 / 0 / 0 | 0 / 0 / 0 |
+
+Mithilesh confirmed the stress-test phrases were audible and the room otherwise
+quiet, making speaker echo the likely source. Four 80ms speech frames meet the
+configured 300ms speech minimum; two stress tails reached that minimum. The first
+report checked only completed endpoints; this measurement exposed the omission,
+which is now fixed and tested. Gain 30 with threshold 150 is deliberately sensitive;
+auto-calibration normally derives both together. Do not label this as a failed
+auto-calibration or silently change its gain from these samples.
+
+The default setup had no observed false-turn risk across these three samples.
+This does not establish performance at other volumes, with user speech, or on a
+full-duplex phone. Next: verify a real speech-calibrated gain/threshold pair and
+normal follow-up speech before deciding on an echo-control change. The phone
+blocker remains open; the diagnostic makes that decision measurable.
+
+Validation: 484 unit tests passed in 6.13s, including eleven diagnostic cases;
+all ten real-stack smoke scenarios passed in 213s plus 7s warmup. Changed-file
+lint and `git diff --check` passed. README documents the command and how to use a
+calibrated pair. No production memory, gain settings or volume were changed.

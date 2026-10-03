@@ -146,6 +146,21 @@ python spike.py path\to\clip.wav   # also time STT on a real 16kHz mono wav
 
 Green = go. A red probe (e.g. sqlite-vec won't load) blocks app code.
 
+To check speaker echo, close the running Jesse, keep the room quiet, and run:
+
+```bash
+python diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
+```
+
+Pick device indices from `python -m jesse devices` and use the gain and threshold
+printed by your calibration. Three short phrases play through the real transport;
+the report measures ambient sound, playback, and each three-second tail. Confirm
+the phrases are audible. `RISK` means tail audio could form a false user turn,
+including speech still waiting for enough silence to finish. No recorded audio is
+saved or sent to memory, and the check does not change calibration or system volume.
+A quiet result applies only to that setup and those samples; it is not a phone echo
+cancellation test.
+
 ## Run the tests
 
 Two layers, deliberately:

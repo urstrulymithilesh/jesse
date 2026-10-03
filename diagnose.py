@@ -6,6 +6,7 @@ Two commands:
     python diagnose.py listen          # live monitor on the DEFAULT input device
     python diagnose.py listen 5        # live monitor on device index 5
     python diagnose.py listen 5 --threshold 400
+    python diagnose.py echo --device 1 --gain 30 --threshold 150
 
 The live monitor shows, per 80ms frame, all in one line:
   * a VU meter of the mic level (RMS)   -> is audio arriving at all?
@@ -165,8 +166,67 @@ def _calibrate(args: list[str]) -> None:
     print(f"      vad_threshold: float = {result.threshold}")
 
 
+def _echo(args: list[str]) -> int:
+    import argparse
+    import asyncio
+
+    from jesse.audio.echo_check import TEST_PHRASE, measure_echo, report
+    from jesse.audio.transport import LocalAudioTransport
+    from jesse.config import CONFIG
+    from jesse.core.single_instance import claim, release
+    from jesse.tts.piper import PiperSynthesizer
+
+    def positive(value):
+        number = float(value)
+        if not math.isfinite(number) or number <= 0:
+            raise argparse.ArgumentTypeError("must be finite and greater than zero")
+        return number
+
+    parser = argparse.ArgumentParser(description="Play three short phrases and measure mic echo.")
+    parser.add_argument("--device", type=int, default=CONFIG.audio.input_device)
+    parser.add_argument("--output-device", type=int, default=CONFIG.audio.output_device)
+    parser.add_argument("--gain", type=positive, default=CONFIG.audio.capture_gain)
+    parser.add_argument("--threshold", type=positive, default=CONFIG.audio.vad_threshold)
+    options = parser.parse_args(args)
+    pid_file = CONFIG.memory.db_path.parent / "jesse.pid"
+    clash = claim(pid_file)
+    if clash:
+        print(clash)
+        return 1
+    try:
+        print("Echo check: stay quiet; three short phrases will play. No mic audio is saved.",
+              flush=True)
+        print(f"Input: {sd.query_devices(options.device, 'input')['name']}")
+        print(f"Output: {sd.query_devices(options.output_device, 'output')['name']}")
+        print(f"Capture gain x{options.gain:g}; VAD threshold {options.threshold:g}. "
+              "Calibration and system volume are unchanged.", flush=True)
+        synth = PiperSynthesizer()
+        chunks = list(synth.synthesize(TEST_PHRASE))  # ready before opening the mic
+        if not any(chunks):
+            raise RuntimeError("The synthesizer produced no test audio")
+        transport = LocalAudioTransport(input_device=options.device,
+                                        output_device=options.output_device, gain=options.gain)
+
+        async def run():
+            return await asyncio.wait_for(measure_echo(
+                transport, chunks, synth.sample_rate, threshold=options.threshold,
+                silence_ms=CONFIG.audio.vad_silence_ms,
+                min_speech_ms=CONFIG.audio.vad_min_speech_ms,
+            ), timeout=60)
+
+        print(report(asyncio.run(run()), min_speech_ms=CONFIG.audio.vad_min_speech_ms))
+        return 0
+    except (Exception, KeyboardInterrupt) as exc:
+        print(f"Echo check incomplete: {exc or type(exc).__name__}")
+        return 1
+    finally:
+        release(pid_file)
+
+
 def main() -> int:
     args = sys.argv[1:]
+    if args and args[0] == "echo":
+        return _echo(args[1:])
     if args and args[0] == "listen":
         device, threshold, gain = _parse_listen_args(args[1:])
         try:
