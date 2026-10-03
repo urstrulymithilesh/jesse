@@ -18,6 +18,7 @@ import re
 from collections.abc import Sequence
 
 from jesse.core.interfaces import LLM, Fact, Message
+from jesse.memory.remember_parse import parse_remember_request
 
 # Tune this freely — it's the extractor's instruction, isolated like the persona.
 EXTRACTION_PROMPT = """\
@@ -72,7 +73,8 @@ class FactExtractor:
         self._llm = llm
 
     def extract(self, user_text: str) -> str:
-        if _HYPOTHETICAL_START.match(user_text):
+        statement = parse_remember_request(user_text) or user_text
+        if _HYPOTHETICAL_START.match(statement):
             return "[]"
         messages = [Message("system", EXTRACTION_PROMPT),
                     Message("user", f"The user said: {user_text}")]

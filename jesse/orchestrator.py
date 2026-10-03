@@ -47,6 +47,7 @@ from jesse.digest.parse import asks_whats_new
 from jesse.memory.corpus import subjects_mentioned
 from jesse.memory.extraction import FactExtractor, parse_extracted_facts
 from jesse.memory.recall import asks_personal_memory, apply_explicit_corrections
+from jesse.memory.remember_parse import parse_remember_request
 from jesse.actions.parse import (MediaCommand, OpenCommand, UnknownTarget,
                                 looks_like_an_action, parse_action_command)
 from jesse.actions.run import ActionError, find_files, media_key, open_target
@@ -430,6 +431,20 @@ class Orchestrator:
                 self.text_channel.log("you", text, via=via)
             self._history.append(Message("user", text))
             appended_user = True
+            if parse_remember_request(text) is not None:
+                # Extraction still runs in the idle gap. Acknowledge receipt,
+                # not a durable write that has not happened yet. Letting the
+                # persona improvise here confused the user's facts with Jesse's.
+                line = ("Got it. I'll try to remember that."
+                        if self.store is not None and self.extractor is not None else
+                        "I can follow that in this conversation, but I can't save "
+                        "a lasting memory right now.")
+                await self._speak(line)
+                if self.text_channel is not None:
+                    self.text_channel.log("jesse", line)
+                self._history.append(Message("assistant", line))
+                self._remember_turn(text, line)
+                return
             facts = (
                 self.store.recall(text, k=CONFIG.memory.recall_k,
                                   include_history=_asks_about_past(text))

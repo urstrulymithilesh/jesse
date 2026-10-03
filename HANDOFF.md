@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-03 · 503 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-03 · 526 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -298,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               503 tests
+tests/               526 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 10 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 503 tests
+.venv\Scripts\python.exe -m pytest -q              # 526 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -659,3 +659,40 @@ Validation: 503 tests passed in 14.53s. A separate real child-process check agai
 an isolated live-owner PID file exited 1 and preserved that claim. All ten real-stack
 smoke scenarios passed in 223s plus 12s warmup. Changed-file duplicate-definition /
 undefined-name lint and `git diff --check` passed.
+
+## 18. Explicit memory-request acknowledgement — 2026-10-03
+
+Repeated smoke sessions stored the turquoise preference correctly while replying
+"I don't have a favorite color" or "Nope". The current turn was still sent through
+the general persona before background extraction. The pre-change replay this time
+said "Turquoise", so the bad reply is intermittent, not a deterministic storage
+failure. The earlier smoke assertion checked persistence only and accepted either
+response. Two routing regressions failed before the fix.
+
+An explicit `remember that ...` declaration (optionally prefixed with `please`)
+now receives "Got it. I'll try to remember that." directly in the shared voice/text
+handler. Both turns are persisted and the same background extractor runs; no extra
+generation or write path was added. This acknowledges receipt, not a completed
+durable write. Without a store or extractor, Jesse instead says lasting memory is
+unavailable. Extraction failures remain unprocessed for the existing restart retry.
+
+The parser deliberately excludes question-ending utterances, `do you remember`,
+`remember my birthday`, `remember to ...`, reminder requests, forgetting and empty
+declarations. These retain existing routing; this is not a general paraphrase
+classifier. Explicit memory requests take precedence over incidental document words.
+The extractor checks a recognized declaration's body for a hypothetical opening so
+`remember that if ...` cannot bypass the existing guard. Its model input remains the
+original user-only statement, both live and during catch-up.
+
+The memory smoke scenario now requires the honest acknowledgement as well as saved
+facts and recall through a fresh database connection. Three harness regressions
+verify that a wrong persona reply, premature saved claim or absent reply cannot pass
+merely because the fact was stored. This does not guarantee extraction of every
+declaration, nor add a later spoken success notification.
+
+Validation: 526 tests passed in 5.96s. The additional UI/continuous-listening
+assertions and progress-entry checks passed in the targeted rerun. Changed-file
+duplicate-definition/undefined-name lint and `git diff --check` passed.
+All ten real-stack smoke scenarios passed in 224s plus 7s warmup. The updated memory
+scenario spoke the exact acknowledgement, extracted the preference on its first
+attempt and recalled it through a fresh connection. No live memory data was edited.

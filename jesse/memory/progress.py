@@ -346,6 +346,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "alone, so two of him do not compete for the same mic after that warning",
         False,
     ),
+    ProgressEntry(
+        "v2.0.9 — he hears a request to remember", "2026-10-03",
+        "when told to remember Mithilesh's favorite color, he sometimes answered "
+        "as though asked for his own. An explicit request now gets a clear "
+        "acknowledgement while he tries to save the fact. He does not claim it "
+        "is saved before that work finishes, and says when lasting memory is "
+        "unavailable. Questions about existing memories still use recall",
+        False,
+    ),
 ]
 
 

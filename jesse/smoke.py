@@ -302,6 +302,11 @@ async def scenario_memory(mouth: Mouth, db: Path) -> Result:
         turns = store._conn.execute("SELECT COUNT(*) FROM turns").fetchone()[0]
         got = store.all_facts()
         store.close()
+        replies = [m.content for m in orch._history if m.role == "assistant"]
+        if not replies or replies[-1] != "Got it. I'll try to remember that.":
+            return Result("memory", False, "explicit memory request was not acknowledged honestly",
+                          checks=checks + [f"reply: {replies[-1] if replies else '(none)'!r}"])
+        checks.append("acknowledged the user's request without claiming it was already saved")
         if got:
             checks.append(f"extraction succeeded on attempt {attempt}")
             break
