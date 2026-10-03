@@ -451,6 +451,7 @@ def _run(argv: list[str]) -> int:
     clash = claim(pid_file)
     if clash:
         print(f"\n  {clash}\n")
+        return 1
 
     device = _device_arg(argv)
     channel = url = None

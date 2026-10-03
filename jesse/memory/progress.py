@@ -338,6 +338,14 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "This was one local setup, not proof that a phone call is ready",
         False,
     ),
+    ProgressEntry(
+        "v2.0.8 — a second copy stops at the door", "2026-10-03",
+        "a second copy could warn that the microphone was already taken and then "
+        "carry on starting anyway. It now stops there, before opening its own "
+        "interface or loading the voice loop. The copy already running is left "
+        "alone, so two of him do not compete for the same mic after that warning",
+        False,
+    ),
 ]
 
 

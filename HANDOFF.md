@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-03 · 501 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-03 · 503 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -298,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               501 tests
+tests/               503 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 10 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 501 tests
+.venv\Scripts\python.exe -m pytest -q              # 503 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -634,3 +634,28 @@ Validation: 501 tests passed in 6.31s, including seventeen CLI cases for the mea
 pair, single overrides, automatic/default behavior and early invalid-value rejection.
 All ten real-stack smoke scenarios passed in 216s plus 7s warmup. Changed-file
 duplicate-definition/undefined-name lint and `git diff --check` passed.
+
+## 17. Duplicate-instance startup guard — 2026-10-03
+
+`run` printed the existing-instance warning but failed to return, continuing into
+UI startup and model/audio construction despite the known microphone conflict.
+Two regression cases reproduced this before the fix (plain run and UI/remote run).
+It now returns exit code 1 immediately after a failed instance claim. It does not
+release the existing owner's claim or start UI, calibration, models or capture.
+The warning no longer recommends `--no-mic`, which is not implemented.
+
+This fixes the caller's ignored conflict result, not the best-effort PID mechanism:
+simultaneous launches can still race, and inability to read/write the PID file is
+still allowed by the existing helper. No stronger locking guarantee is claimed.
+
+The normal live conversation attempt used gain 14.8 / threshold 1004 and was closed
+with Ctrl-C. Logs eventually showed a wake followed by a quiet-listening timeout,
+but no completed spoken user turn. Background memory catch-up also logged an
+Ollama request timeout. This attempt does not validate conversational self-echo or
+invalidate the successful calibrated level/endpoint probe in §16. The user asked
+to move on; no further microphone session was left running.
+
+Validation: 503 tests passed in 14.53s. A separate real child-process check against
+an isolated live-owner PID file exited 1 and preserved that claim. All ten real-stack
+smoke scenarios passed in 223s plus 12s warmup. Changed-file duplicate-definition /
+undefined-name lint and `git diff --check` passed.

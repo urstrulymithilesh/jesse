@@ -53,6 +53,19 @@ def test_no_calibrate_keeps_configured_pair(startup):
     assert startup == [(CONFIG.audio.capture_gain, CONFIG.audio.vad_threshold)]
 
 
+@pytest.mark.parametrize("args", [[], ["--ui", "--remote"]])
+def test_running_instance_stops_startup_before_ui_models_or_audio(monkeypatch, capsys, args):
+    def unexpected(*args, **kwargs):
+        pytest.fail("startup continued despite another Jesse holding the microphone")
+
+    monkeypatch.setattr("jesse.core.single_instance.claim", lambda _: "Another Jesse is running")
+    monkeypatch.setattr("jesse.core.single_instance.release", unexpected)
+    monkeypatch.setattr("jesse.factory.build_orchestrator", unexpected)
+    monkeypatch.setattr("jesse.ui.server.start", unexpected)
+    assert _run(args) == 1
+    assert "Another Jesse is running" in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("flag", ["--gain", "--threshold"])
 @pytest.mark.parametrize("value", [None, "0", "-1", "nan", "inf", "quiet"])
 def test_invalid_audio_settings_fail_before_services_or_devices(monkeypatch, capsys, flag, value):

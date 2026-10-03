@@ -52,7 +52,7 @@ def claim(path: str | Path) -> str | None:
                 return (f"Another Jesse is already running (pid {existing}). He is "
                         f"holding the microphone, so this one will hear almost nothing "
                         f"— calibration will fail and the wake word will not fire. "
-                        f"Close the other one first, or run this with --no-mic.")
+                        f"Close the other one first, then try again.")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(str(os.getpid()), encoding="utf-8")
     except OSError:

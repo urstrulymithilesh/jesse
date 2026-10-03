@@ -372,6 +372,7 @@ def test_a_second_instance_is_named_not_left_as_a_symptom(tmp_path):
     message = claim(pid_file)
     if message is not None:                          # some platforms deny inspecting it
         assert "already running" in message and "microphone" in message
+        assert "--no-mic" not in message  # run has no such bypass
 
     release(pid_file)
 
