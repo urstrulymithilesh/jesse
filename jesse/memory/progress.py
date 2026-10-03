@@ -311,6 +311,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "brain is offline at startup, he says to start it before opening the mic",
         True,
     ),
+    ProgressEntry(
+        "v2.0.5 — late audio stays out of the next turn", "2026-10-03",
+        "some microphone audio from his reply could arrive late, after he had "
+        "already cleared the buffer to listen again. He now checks when it "
+        "arrived and drops it if that listening boundary has passed. He still "
+        "hears the stop word while speaking. Echo that lingers in the room "
+        "afterwards still needs a live check",
+        False,
+    ),
 ]
 
 

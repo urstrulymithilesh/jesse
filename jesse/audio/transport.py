@@ -4,9 +4,9 @@ Real WASAPI mic in / speaker out via sounddevice. This is the seam where the
 rejected VoIP idea would slot back in as a drop-in adapter (same PCM frames in
 and out); nothing else in the pipeline would change.
 
-Half-duplex invariant lives here: `mute_input()` stops STT-bound frames flowing
-while Jesse speaks; `unmute_input()` re-opens AND flushes the queue so he never
-transcribes the tail of his own voice (self-trigger echo).
+The orchestrator gates STT while muted; capture still feeds the stop-word detector.
+`unmute_input()` flushes queued frames and invalidates pending callbacks captured
+before reopening. Acoustic echo captured after reopening needs separate handling.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ class LocalAudioTransport:
         self._queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=50)
         self._loop: asyncio.AbstractEventLoop | None = None
         self._muted = False
+        self._capture_epoch = 0
 
     async def capture(self) -> AsyncIterator[bytes]:
         self._loop = asyncio.get_running_loop()
@@ -40,9 +41,10 @@ class LocalAudioTransport:
 
         def _cb(indata, frames, time_info, status) -> None:  # noqa: ANN001 - sd callback
             # Runs on PortAudio's thread; hand the frame to the asyncio loop.
+            epoch = self._capture_epoch
             pcm = bytes(indata)
             if self._loop is not None:
-                self._loop.call_soon_threadsafe(self._offer, pcm)
+                self._loop.call_soon_threadsafe(self._offer, pcm, epoch)
 
         try:
             stream = sd.RawInputStream(
@@ -62,7 +64,11 @@ class LocalAudioTransport:
             while True:
                 yield await self._queue.get()
 
-    def _offer(self, pcm: bytes) -> None:
+    def _offer(self, pcm: bytes, epoch: int) -> None:
+        # Playback shutdown can block the loop: a callback may have captured
+        # echo before unmute but only reach this method after the queue flush.
+        if epoch != self._capture_epoch:
+            return
         if self.gain != 1.0:
             arr = np.frombuffer(pcm, dtype=np.int16).astype(np.float32) * self.gain
             np.clip(arr, -32768, 32767, out=arr)
@@ -92,8 +98,9 @@ class LocalAudioTransport:
         self._muted = True
 
     def unmute_input(self) -> None:
+        self._capture_epoch += 1
         self._muted = False
-        # Flush anything captured while muted (Jesse's own voice tail).
+        # Invalidate callbacks first, then flush frames already in the queue.
         while not self._queue.empty():
             try:
                 self._queue.get_nowait()

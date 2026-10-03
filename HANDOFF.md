@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-02 · 468 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-03 · 473 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -77,7 +77,7 @@ belongs to one person, sends nothing anywhere.
 | **Knowledge (RAG)** | `jesse learn <name> <path>`. Trigger = naming the subject, or a keyword-ask. Not a distance gate — that inverted on the second corpus. |
 | **Sources (RSS)** | ON. 6h interval, silent fetch, reactive "what's new". Instruction-shaped items dropped at ingest. |
 | **Remote** | **PAUSED — see §4.** Built and left in place. |
-| **Smoke harness** | 9 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
+| **Smoke harness** | 10 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
 
 **Honesty guards:** real clock injected every turn; hard rule that he knows only what he is
 told/given/timestamped; anchoring blocks for broad and temporal questions; recall-mode
@@ -411,6 +411,8 @@ A Media Streams handler feeds them.
    and a thinking turn without speech). This is not acoustic echo cancellation:
    delayed room echo, over-gain calibration and a full-duplex phone still need live
    validation before this blocker can be closed.
+   **2026-10-03:** callbacks captured before unmute but delivered after its queue
+   flush are now discarded; five transport regressions cover this second path (§14).
 2. Media Streams websocket endpoint + TwiML. **First networking dependency** (stdlib
    has no websocket server), and a public `wss` on 443 — a *bigger* surface than the
    Tailscale path that was paused for being too much friction.
@@ -509,3 +511,30 @@ scenarios passed in 221s plus 7s warmup. The new personal-recall scenario answer
 "You want to be sky-diving next month." Duplicate-definition/undefined-name lint
 and `git diff --check` also passed. The successful full rerun includes the corrected
 action assertion and database cleanup.
+
+## 14. Delayed microphone callbacks — 2026-10-03
+
+Reproduced a second self-echo path with a deterministic mocked PortAudio callback:
+audio captured while muted can be scheduled on the event loop but not yet in the
+capture queue when `unmute_input()` flushes it. Blocking output shutdown can leave
+such callbacks pending. The original transport delivered `echo` as the next user
+frame in this test, instead of the freshly captured `user` frame.
+
+Each callback now snapshots a capture generation before copying its audio.
+Unmute increments the generation and flushes queued audio; delivery rejects an
+older generation before gain processing or queue insertion. Muting still allows
+current frames through for wake/stop detectors. No cooldown or microphone delay
+was added, and the public transport contract is unchanged.
+
+Five regression cases cover already-queued and pending callback audio, including
+another reply starting before the old callback arrives, plus live muted capture
+with gain and clipping. The full unit suite passed: 473 tests in 11.09s.
+All ten real-stack smoke scenarios passed in 227s plus 18s warmup, including
+barge-in, wake-after-reply and remote audio. The progress-entry tests, changed-file
+duplicate-definition/undefined-name lint and `git diff --check` also passed.
+
+This closes the reproduced callback scheduling gap only. Audio first captured
+after reopening (room reverberation or device buffering), calibration gain and
+full-duplex phone echo still require live hardware validation. The headless smoke
+suite does not exercise actual PortAudio devices; phone integration remains blocked
+on that validation.
