@@ -405,15 +405,28 @@ class Orchestrator:
         """A SPOKEN turn: transcribe, then hand to the shared core."""
         secs = len(audio) / 2 / SAMPLE_RATE  # int16 mono @ 16k
         print(f"  [captured {secs:.1f}s of audio]")
-        text = (await asyncio.to_thread(self.transcriber.transcribe, audio)).strip()
-        # The pre-roll means the wake word itself is usually in the transcript, and
-        # that prefix measurably breaks fact extraction on 3b. Strip it once, here.
-        text = strip_wake_prefix(text, CONFIG.wake.model)
-        # And a name-shaped word left in front of a comma, which the wake stripper
-        # cannot touch because there is no wake token beside it. Live, "hey jarvis"
-        # arrived as "Heeshak," and silently disabled every parser anchored to the
-        # start of the utterance.
-        text = strip_vocative(text)
+        transcribed = False
+        try:
+            text = (await asyncio.to_thread(self.transcriber.transcribe, audio)).strip()
+            # Pre-roll includes the wake word; a mangled name before a comma can
+            # also disable parsers anchored at the beginning of the utterance.
+            text = strip_vocative(strip_wake_prefix(text, CONFIG.wake.model))
+            transcribed = True
+        except Exception as e:  # noqa: BLE001 - STT fails before the shared turn handler
+            print(f"  [transcription failed] {type(e).__name__}: {e}")
+            line = "Sorry, I couldn't transcribe that. Please say it again."
+            if self.text_channel is not None:
+                self.text_channel.log("jesse", line)
+            try:
+                await self._speak(line)
+            except Exception as playback_error:  # noqa: BLE001 - recover even without audio
+                print(f"  [error playback failed] {type(playback_error).__name__}: {playback_error}")
+            return
+        finally:
+            # Cancellation also needs cleanup, but must propagate without an apology.
+            # Successful transcription hands cleanup to _handle_utterance instead.
+            if not transcribed:
+                await self._finish_turn()
         await self._handle_utterance(text, via="voice")
 
     def _start_text_turn(self, text: str) -> None:
@@ -637,7 +650,7 @@ class Orchestrator:
                 self._history.append(Message("assistant", reply))
                 self._remember_turn(text, reply)
         except Exception as e:  # noqa: BLE001 - a failed turn must never hang "thinking"
-            # LLMError, TTS failure, transcription error — surface it, don't stall.
+            # LLMError or TTS failure — surface it, don't stall.
             print(f"  [turn failed] {type(e).__name__}: {e}")
             if appended_user and self._history and self._history[-1].role == "user":
                 self._history.pop()  # don't leave a dangling half-exchange in context
@@ -646,23 +659,24 @@ class Orchestrator:
             except Exception:  # noqa: BLE001 - even the apology's audio can fail
                 pass
         finally:
-            if self.state is not ConversationState.IDLE:
-                self._enter(ConversationState.IDLE)
-            await self._drain_alerts()
-            if self._barge_in:
-                # Mithilesh said the wake word to cut him off, so that word is already spent.
-                # Going idle here would make his say it a second time before he'd
-                # hear the thing he actually interrupted his to say.
-                self._barge_in = False
-                print("  [interrupt] listening for what you wanted instead")
-                self._begin_listening()
-            elif self._go_quiet:
-                self._go_quiet = False       # he has said goodbye; now actually stop
-                self._enter(ConversationState.IDLE)
-            elif self._engaged and self.state is ConversationState.IDLE:
-                # Continuous conversation: no wake word between turns. Background work
-                # started by THIS turn must survive the transition.
-                self._begin_listening(interrupt_background=False)
+            await self._finish_turn()
+
+    async def _finish_turn(self) -> None:
+        """Restore listening and deliver alerts after a reply or failed transcription."""
+        if self.state is not ConversationState.IDLE:
+            self._enter(ConversationState.IDLE)
+        await self._drain_alerts()
+        if self._barge_in:
+            # The wake word used to interrupt has already been spent.
+            self._barge_in = False
+            print("  [interrupt] listening for what you wanted instead")
+            self._begin_listening()
+        elif self._go_quiet:
+            self._go_quiet = False       # he has said goodbye; now actually stop
+            self._enter(ConversationState.IDLE)
+        elif self._engaged and self.state is ConversationState.IDLE:
+            # Continuous conversation: work started by THIS turn must survive.
+            self._begin_listening(interrupt_background=False)
 
     async def _think(self, messages: list[Message]) -> str:
         """Generate the whole reply before returning. Kept for callers that want text

@@ -278,6 +278,42 @@ async def scenario_conversation(mouth: Mouth, db: Path) -> Result:
     return Result("conversation", True, "full turn completed on the real stack", checks=checks)
 
 
+async def scenario_transcription_recovery(mouth: Mouth, db: Path) -> Result:
+    """Inject one STT failure, then hear a real follow-up without another wake."""
+    frames = mouth.frames("hey jarvis") + mouth.frames("say hello in five words")
+    transport = ScriptedTransport(
+        frames, followup_frames=mouth.frames("say hello in five words"), min_replies=2)
+    orch, _, _ = _build(transport, db, with_memory=False)
+    channel = TextChannel()
+    orch.text_channel = channel
+    real_transcriber = orch.transcriber
+
+    class FailOnce:
+        calls = 0
+
+        def transcribe(self, pcm):
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("smoke: injected transcription failure")
+            return real_transcriber.transcribe(pcm)
+
+    orch.transcriber = FailOnce()
+    await orch.run()
+    lines = channel.transcript
+    users = [m.content for m in orch._history if m.role == "user"]
+    replies = [m.content for m in orch._history if m.role == "assistant"]
+    error_reported = bool(lines and "couldn't transcribe" in lines[0].text)
+    recovered = (orch.transcriber.calls == 2 and len(users) == len(replies) == 1
+                 and "hello" in users[0].lower() and bool(replies[0])
+                 and orch.state is ConversationState.LISTENING)
+    checks = [f"injected failure reported in UI: {error_reported}",
+              f"follow-up transcript: {users!r}; reply: {replies!r}",
+              f"playback calls: {transport.play_calls}; final state: {orch.state.value}"]
+    return Result("transcription-recovery", error_reported and recovered
+                  and transport.play_calls >= 2 and bool(transport.played),
+                  "failed STT recovered for a real spoken follow-up", checks=checks)
+
+
 async def scenario_memory(mouth: Mouth, db: Path) -> Result:
     """Teach a fact through speech, then prove it is in real SQLite and recallable
     from a FRESH store — the cross-process claim, checked rather than assumed.
@@ -827,6 +863,7 @@ async def scenario_personal_recall(mouth: Mouth, db: Path) -> Result:
 
 SCENARIOS = [
     ("conversation", scenario_conversation),
+    ("transcription-recovery", scenario_transcription_recovery),
     ("memory", scenario_memory),
     ("memory-followup", scenario_memory_followup),
     ("personal-recall", scenario_personal_recall),

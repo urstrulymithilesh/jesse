@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-04 · 532 tests · 11/11 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-04 · 539 tests · 12/12 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -77,7 +77,7 @@ belongs to one person, sends nothing anywhere.
 | **Knowledge (RAG)** | `jesse learn <name> <path>`. Trigger = naming the subject, or a keyword-ask. Not a distance gate — that inverted on the second corpus. |
 | **Sources (RSS)** | ON. 6h interval, silent fetch, reactive "what's new". Instruction-shaped items dropped at ingest. |
 | **Remote** | **PAUSED — see §4.** Built and left in place. |
-| **Smoke harness** | 11 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
+| **Smoke harness** | 12 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
 
 **Honesty guards:** real clock injected every turn; hard rule that he knows only what he is
 told/given/timestamped; anchoring blocks for broad and temporal questions; recall-mode
@@ -101,7 +101,7 @@ drops few-shot examples for memory questions.
 | Actions | 23 targets · search depth 4 · top-5 |
 | Knowledge | name + keyword trigger · top-2 · 800-char chunks · gate 0.46 |
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
-| Progress log | 33 entries |
+| Progress log | 43 entries |
 
 Everything sits behind `jesse/core/interfaces.py`. Swapping a model or engine is a
 config change.
@@ -298,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               532 tests
+tests/               539 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
-.venv\Scripts\python.exe -m jesse smoke            # 11 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 532 tests
+.venv\Scripts\python.exe -m jesse smoke            # 12 scenarios, real stack, ~4min
+.venv\Scripts\python.exe -m pytest -q              # 539 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -735,3 +735,28 @@ Final verification on 2026-10-04: all 11 real-stack smoke scenarios passed in 24
 plus 17s warmup. The new immediate-recall scenario answered "Turquoise, dude." and
 confirmed the requested fact and processed exchange in SQLite. The birthday-plan
 scenario answered "Sky-diving next month." No live memory data was edited.
+
+## 20. Recover from transcription failure — 2026-10-04
+
+The STT worker ran before `_handle_utterance` and its error recovery. An exception
+there left the live loop in THINKING, ignoring both speech and queued text. If the
+transport ended, awaiting that failed turn also aborted normal shutdown work.
+Seven regression cases failed before this fix.
+
+The spoken-turn boundary now reports "Sorry, I couldn't transcribe that. Please
+say it again." in the UI and through speech, then uses the same cleanup as ordinary
+turns. Continuous mode resumes listening; otherwise it returns to idle. Pending
+alerts are delivered, and the next spoken or typed turn can complete. Playback
+failure during this error message is caught as well. No transcript or memory is
+fabricated for the failed recording. Cancellation propagates without an apology
+and restores the state; it does not forcibly stop the underlying STT thread.
+
+Tests cover idle/continuous recovery, failed apology playback, pending alerts,
+spoken/typed follow-ups and cancellation. All 539 unit tests passed in 6.53s;
+changed-file duplicate-definition/undefined-name lint and `git diff --check` passed.
+The new `transcription-recovery` smoke scenario injects one STT exception, then
+uses real Whisper/Ollama/Piper for a spoken follow-up without another wake word.
+All 12 real-stack smoke scenarios passed in 249s plus 7s warmup. The new scenario
+reported the injected failure, transcribed "Say hello in five words." on the next
+utterance, spoke a real model reply and ended in LISTENING. Production memory and
+audio-device settings were untouched; this was headless, not a live headset test.

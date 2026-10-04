@@ -365,6 +365,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "to pretend otherwise",
         True,
     ),
+    ProgressEntry(
+        "v2.0.11 — a hearing error no longer freezes the conversation", "2026-10-04",
+        "if speech transcription failed, he could stay stuck thinking and stop "
+        "taking spoken or typed turns. He now says that he could not transcribe "
+        "the words and returns to listening. The message also appears in his "
+        "interface if playback fails. A failed recording becomes no invented "
+        "transcript or memory; Mithilesh can simply try again",
+        True,
+    ),
 ]
 
 
