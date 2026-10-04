@@ -341,7 +341,7 @@ class Orchestrator:
         st = self.state
         if st is ConversationState.IDLE:
             if self._alerts:
-                await self._speak(self._alerts.pop(0))
+                await self._announce_alert(self._alerts.pop(0))
                 return
             if woke:
                 print("  [wake] heard the wake word"
@@ -1284,9 +1284,22 @@ class Orchestrator:
                 return
             yield chunk
 
+    async def _announce_alert(self, text: str) -> None:
+        """Keep reminders visible and contain audio failures at both delivery sites."""
+        if self.text_channel is not None:
+            self.text_channel.log("jesse", text)
+        try:
+            await self._speak(text)
+        except Exception as e:  # noqa: BLE001 - one failed alert must not stop capture
+            print(f"  [reminder audio failed] {type(e).__name__}: {e}; reminder: {text}")
+            if self.text_channel is not None:
+                self.text_channel.log("jesse", "I couldn't play that reminder aloud.")
+            # No spoken apology or retry: the output device may still be broken.
+            # The scheduler has already marked this reminder fired.
+
     async def _drain_alerts(self) -> None:
         # Same reasoning as extraction: LISTENING is a safe moment to speak up, and
         # requiring IDLE would mean reminders never fire in continuous mode.
         while self._alerts and self.state in (ConversationState.IDLE,
                                               ConversationState.LISTENING):
-            await self._speak(self._alerts.pop(0))
+            await self._announce_alert(self._alerts.pop(0))

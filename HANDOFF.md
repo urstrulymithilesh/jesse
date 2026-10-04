@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-04 · 539 tests · 12/12 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-04 · 544 tests · 12/13 smoke, failed scenario passed on rerun (§21) · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -77,7 +77,7 @@ belongs to one person, sends nothing anywhere.
 | **Knowledge (RAG)** | `jesse learn <name> <path>`. Trigger = naming the subject, or a keyword-ask. Not a distance gate — that inverted on the second corpus. |
 | **Sources (RSS)** | ON. 6h interval, silent fetch, reactive "what's new". Instruction-shaped items dropped at ingest. |
 | **Remote** | **PAUSED — see §4.** Built and left in place. |
-| **Smoke harness** | 12 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
+| **Smoke harness** | 13 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
 
 **Honesty guards:** real clock injected every turn; hard rule that he knows only what he is
 told/given/timestamped; anchoring blocks for broad and temporal questions; recall-mode
@@ -101,7 +101,7 @@ drops few-shot examples for memory questions.
 | Actions | 23 targets · search depth 4 · top-5 |
 | Knowledge | name + keyword trigger · top-2 · 800-char chunks · gate 0.46 |
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
-| Progress log | 43 entries |
+| Progress log | 44 entries |
 
 Everything sits behind `jesse/core/interfaces.py`. Swapping a model or engine is a
 config change.
@@ -298,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               539 tests
+tests/               544 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
-.venv\Scripts\python.exe -m jesse smoke            # 12 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 539 tests
+.venv\Scripts\python.exe -m jesse smoke            # 13 scenarios, real stack, ~4min
+.venv\Scripts\python.exe -m pytest -q              # 544 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -760,3 +760,37 @@ All 12 real-stack smoke scenarios passed in 249s plus 7s warmup. The new scenari
 reported the injected failure, transcribed "Say hello in five words." on the next
 utterance, spoke a real model reply and ended in LISTENING. Production memory and
 audio-device settings were untouched; this was headless, not a live headset test.
+
+## 21. Reminder audio failures no longer stop the loop — 2026-10-04
+
+Reminder playback had two unguarded paths: an idle announcement ran directly inside
+the microphone loop, and queued announcements ran during turn cleanup. Playback or
+synthesis errors could therefore abort capture or prevent continuous listening
+from resuming, leaving later reminders queued. Successful alerts were also absent
+from the text UI. Four regression cases failed before this fix.
+
+Both sites now use one announcement helper. It logs the reminder in the UI before
+trying audio and catches synthesis/playback exceptions, logging an explicit audio
+failure in the UI and the technical error in the console. Remaining queued alerts
+and subsequent turns continue. There is no spoken apology or automatic retry when
+the output device may still be broken. Scheduler status still means the reminder
+was fired, not that audio was heard; its existing at-most-once behavior is unchanged.
+Cancellation still propagates. Alerts stay out of conversation history/extraction.
+
+Five tests cover idle-loop survival, queued synthesis and playback failures,
+later reminders and typed input, successful UI delivery, and cancellation. All
+544 unit tests passed in 6.21s; changed-file duplicate-definition/undefined-name
+lint and `git diff --check` passed. The new `alert-recovery` smoke scenario uses a
+real due SQLite timer, injects one output-device failure after real synthesis,
+then checks that a real voice exchange completes and the timer does not repeat.
+
+Real-stack verification: 12/13 scenarios passed in 263s plus 6s warmup, including
+the new alert recovery. The knowledge scenario failed because Whisper transcribed
+the one-word "Yes" follow-up as "Nes?", so the short-affirmation route did not fire.
+An unchanged targeted rerun passed in 26s plus 7s warmup: Whisper heard "Yes?" and
+Jesse answered "Ferrets sleep 14-18 hours a day, in short bursts." This is not a
+fully green single run and does not fix one-word recognition. The failed scenario
+also logged a spurious `coffee preference` extraction from the ambiguous exchange;
+that remains a separate extraction issue to investigate. All databases here were
+temporary. Logs are in ignored `data/smoke-alert-recovery.log` and
+`data/smoke-alert-knowledge-rerun.log`; production memory was untouched.

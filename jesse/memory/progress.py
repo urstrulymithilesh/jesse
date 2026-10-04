@@ -374,6 +374,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "transcript or memory; Mithilesh can simply try again",
         True,
     ),
+    ProgressEntry(
+        "v2.0.12 — a silent reminder does not end the conversation", "2026-10-04",
+        "a reminder whose audio failed could stop him listening altogether. "
+        "He now keeps going, delivers the remaining reminders and leaves each "
+        "one visible in his interface. If he cannot play it aloud, he says so "
+        "there. He does not keep retrying a broken speaker or claim the reminder "
+        "was heard",
+        True,
+    ),
 ]
 
 

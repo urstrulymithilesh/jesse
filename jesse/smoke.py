@@ -447,6 +447,45 @@ async def scenario_timer(mouth: Mouth, db: Path) -> Result:
     return Result("timer", True, "set by voice, fired on time", checks=checks)
 
 
+async def scenario_alert_recovery(mouth: Mouth, db: Path) -> Result:
+    """A due reminder's failed playback must not prevent the next real voice turn."""
+    class FailFirstPlayback(ScriptedTransport):
+        failed = False
+
+        async def play(self, frames, *, sample_rate=SAMPLE_RATE):
+            if not self.failed:
+                self.failed = True
+                # Exercise real synthesis before simulating a lost output device.
+                next(iter(frames))
+                raise OSError("smoke: injected reminder playback failure")
+            await super().play(frames, sample_rate=sample_rate)
+
+    frames = [SILENCE] + mouth.frames("hey jarvis") + mouth.frames("say hello in five words")
+    transport = FailFirstPlayback(frames)
+    orch, _, scheduler = _build(transport, db, with_memory=False, with_scheduler=True)
+    orch.text_channel = TextChannel()
+    try:
+        scheduler.add("", datetime.now() - timedelta(seconds=1), is_timer=True)
+        assert scheduler.check() == 1  # real SQLite scheduler queues the due alert
+        await orch.run()
+        lines = [line.text for line in orch.text_channel.transcript]
+        users = [m.content for m in orch._history if m.role == "user"]
+        replies = [m.content for m in orch._history if m.role == "assistant"]
+        visible = lines[:2] == ["your timer is up", "I couldn't play that reminder aloud."]
+        no_repeat = not scheduler.pending() and scheduler.check() == 0 and not orch._alerts
+        recovered = (len(users) == len(replies) == 1 and "hello" in users[0].lower()
+                     and bool(replies[0]) and bool(transport.played)
+                     and orch.state is ConversationState.LISTENING)
+        passed = transport.failed and visible and no_repeat and recovered
+        return Result("alert-recovery", passed,
+                      "reminder audio failure preserved the next voice turn" if passed else
+                      "reminder audio failure did not recover cleanly",
+                      checks=[f"reminder and audio failure visible: {visible}; no repeat: {no_repeat}",
+                              f"next transcript: {users!r}; reply: {replies!r}"])
+    finally:
+        scheduler._store.close()
+
+
 async def scenario_barge_in(mouth: Mouth, db: Path) -> Result:
     """The one that broke live: interrupt mid-reply, then be heard afterwards."""
     checks = []
@@ -868,6 +907,7 @@ SCENARIOS = [
     ("memory-followup", scenario_memory_followup),
     ("personal-recall", scenario_personal_recall),
     ("timer", scenario_timer),
+    ("alert-recovery", scenario_alert_recovery),
     ("barge-in", scenario_barge_in),
     ("wake-after-reply", scenario_wake_after_reply),
     ("action", scenario_action),
