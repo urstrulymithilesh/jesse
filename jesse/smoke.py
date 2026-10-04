@@ -332,6 +332,46 @@ async def scenario_memory(mouth: Mouth, db: Path) -> Result:
     return Result("memory", True, "stored and recalled across a new connection", checks=checks)
 
 
+async def scenario_memory_followup(mouth: Mouth, db: Path) -> Result:
+    """Ask again before a requested extraction can start, without restarting Jesse."""
+    transport = ScriptedTransport([])
+    orch, store, _ = _build(transport, db)
+    question = None
+    held = False
+    try:
+        await orch._llm_lock.acquire()
+        held = True
+        await orch._handle_utterance("Remember that my favorite color is turquoise.", via="text")
+        orch._begin_listening()  # the next wake must not cancel the memory request
+        orch._enter(ConversationState.THINKING)
+        question = asyncio.create_task(orch._handle_utterance(
+            "What is my favorite color?", via="text"))
+        await asyncio.sleep(0)  # force the recall/extraction handoff before releasing the model
+        orch._llm_lock.release()
+        held = False
+        await question
+        answer = orch._history[-1].content
+        saved = any("turquoise" in f.text.lower() for f in store.all_facts())
+        processed = store._conn.execute(
+            "SELECT COUNT(*) FROM turns WHERE id IN (1,2) AND processed=1"
+        ).fetchone()[0] == 2
+        checks = [f"immediate answer: {answer!r}",
+                  f"requested fact stored: {saved}; original exchange processed: {processed}"]
+        passed = saved and processed and "turquoise" in answer.lower()
+        return Result("memory-followup", passed,
+                      "immediate recall used the pending request" if passed else
+                      "immediate recall missed the requested fact", checks=checks)
+    finally:
+        if held:
+            orch._llm_lock.release()
+        if question is not None and not question.done():
+            question.cancel()
+            await asyncio.gather(question, return_exceptions=True)
+        tasks = {orch._extract_task, *orch._requested_extractions}
+        await asyncio.gather(*(t for t in tasks if t is not None), return_exceptions=True)
+        store.close()
+
+
 async def scenario_timer(mouth: Mouth, db: Path) -> Result:
     """A spoken timer reaches the real scheduler and actually fires."""
     checks = []
@@ -788,6 +828,7 @@ async def scenario_personal_recall(mouth: Mouth, db: Path) -> Result:
 SCENARIOS = [
     ("conversation", scenario_conversation),
     ("memory", scenario_memory),
+    ("memory-followup", scenario_memory_followup),
     ("personal-recall", scenario_personal_recall),
     ("timer", scenario_timer),
     ("barge-in", scenario_barge_in),

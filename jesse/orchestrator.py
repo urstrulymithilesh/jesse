@@ -232,9 +232,11 @@ class Orchestrator:
         self._turn_task: asyncio.Task[None] | None = None
         # Overlap gating: ONE lock guards every Ollama call (reply AND extraction), so
         # they can never hit the model/CPU at the same time. Extraction runs in the idle
-        # gap as a background task and is cancelled the instant a new turn begins.
+        # gap. Explicit memory requests survive a new turn; incidental extraction
+        # can be cancelled, but its worker must finish before releasing this lock.
         self._llm_lock = asyncio.Lock()
         self._extract_task: asyncio.Task[None] | None = None
+        self._requested_extractions: set[asyncio.Task[None]] = set()
         self._catchup_task: asyncio.Task[None] | None = None
         self._summary_task: asyncio.Task[None] | None = None
         self._scheduler_task: asyncio.Task[None] | None = None
@@ -285,7 +287,7 @@ class Orchestrator:
         for loop in (self._scheduler_task, self._digest_task):
             if loop is not None:
                 loop.cancel()                    # infinite loops; stop them on exit
-        for task in (self._catchup_task, self._extract_task):
+        for task in {*self._requested_extractions, self._catchup_task, self._extract_task}:
             if task is not None and not task.done():
                 try:
                     await task               # let a final idle-gap extraction finish
@@ -378,11 +380,12 @@ class Orchestrator:
         continuous mode. Cancelling there would kill the fact extraction that the turn
         just kicked off — every single turn — because he is now always listening
         rather than idling between turns."""
-        # A new interaction takes priority: cancel any pending idle-gap extraction so it
-        # can't compete with the coming reply. Best-effort — a lost extraction is fine.
+        # Incidental extraction yields to a new interaction. An explicit request
+        # must survive the wake that starts a follow-up about the just-taught fact.
         if interrupt_background:
             for task in (self._extract_task, self._catchup_task):
-                if task is not None and not task.done():
+                if (task is not None and not task.done()
+                        and task not in self._requested_extractions):
                     task.cancel()   # safe: the turn stays unprocessed, retried later
         # Seed the turn with the pre-roll so the start of the sentence (spoken during
         # the wake word's detection latency) is included. Do NOT flush here — flushing
@@ -445,6 +448,17 @@ class Orchestrator:
                 self._history.append(Message("assistant", line))
                 self._remember_turn(text, line)
                 return
+            if self._requested_extractions and (
+                asks_personal_memory(text) or _asks_about_shared_history(text)
+                or parse_forget_command(text) is not None
+            ):
+                # Build recall only AFTER requested facts have reached the store.
+                # Forget must also follow pending writes, or they can recreate a
+                # fact immediately after the deletion. Shield the individual jobs
+                # so cancelling this question does not cancel the memory request.
+                print("  [memory] finishing requested facts before recall or forgetting")
+                await asyncio.gather(*(asyncio.shield(task)
+                                       for task in tuple(self._requested_extractions)))
             facts = (
                 self.store.recall(text, k=CONFIG.memory.recall_k,
                                   include_history=_asks_about_past(text))
@@ -780,8 +794,12 @@ class Orchestrator:
         uid = self.store.append_turn(Message("user", user_text))
         aid = self.store.append_turn(Message("assistant", reply))
         if self.extractor is not None:
+            requested = parse_remember_request(user_text) is not None
             self._extract_task = asyncio.create_task(
-                self._extract_facts(user_text, turn_ids=(uid, aid)))
+                self._extract_facts(user_text, turn_ids=(uid, aid), requested=requested))
+            if requested:
+                self._requested_extractions.add(self._extract_task)
+                self._extract_task.add_done_callback(self._requested_extractions.discard)
 
     @property
     def remote_live(self) -> bool:
@@ -1170,7 +1188,7 @@ class Orchestrator:
             await self._extract_facts(user_text, turn_ids=(uid, aid), catchup=True)
 
     async def _extract_facts(self, user_text: str, *, turn_ids=(),
-                             catchup: bool = False) -> None:
+                             catchup: bool = False, requested: bool = False) -> None:
         assert self.store is not None and self.extractor is not None
         debug = CONFIG.memory.debug_extraction
         try:
@@ -1181,10 +1199,28 @@ class Orchestrator:
                 # ACTIVE turn must not be competed with. Checking for IDLE here broke
                 # extraction entirely once continuous mode kept his listening between
                 # turns — he was never idle again.
-                if self.state in (ConversationState.THINKING, ConversationState.SPEAKING):
+                if not requested and self.state in (
+                    ConversationState.THINKING, ConversationState.SPEAKING,
+                ):
                     print("  [memory] skipped — a new turn started before extraction could run")
                     return
-                raw = await asyncio.to_thread(self.extractor.extract, user_text)
+                worker = asyncio.create_task(asyncio.to_thread(self.extractor.extract, user_text))
+                try:
+                    raw = await asyncio.shield(worker)
+                except asyncio.CancelledError:
+                    # Cancelling an asyncio waiter cannot stop its blocking HTTP
+                    # thread. Keep the model lock until that request really ends,
+                    # including if another wake cancels us again while draining.
+                    while not worker.done():
+                        try:
+                            await asyncio.shield(worker)
+                        except asyncio.CancelledError:
+                            pass
+                        except Exception:
+                            break
+                    if not worker.cancelled():
+                        worker.exception()  # retrieve a late failure before re-raising cancellation
+                    raise
             if debug:
                 print(f"  [memory:debug] user statement: {user_text!r}")
                 print(f"  [memory:debug] model returned: {raw!r}")

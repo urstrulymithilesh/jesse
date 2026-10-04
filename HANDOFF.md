@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-03 · 526 tests · 10/10 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-04 · 532 tests · 11/11 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -77,7 +77,7 @@ belongs to one person, sends nothing anywhere.
 | **Knowledge (RAG)** | `jesse learn <name> <path>`. Trigger = naming the subject, or a keyword-ask. Not a distance gate — that inverted on the second corpus. |
 | **Sources (RSS)** | ON. 6h interval, silent fetch, reactive "what's new". Instruction-shaped items dropped at ingest. |
 | **Remote** | **PAUSED — see §4.** Built and left in place. |
-| **Smoke harness** | 10 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
+| **Smoke harness** | 11 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
 
 **Honesty guards:** real clock injected every turn; hard rule that he knows only what he is
 told/given/timestamped; anchoring blocks for broad and temporal questions; recall-mode
@@ -298,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               526 tests
+tests/               532 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
-.venv\Scripts\python.exe -m jesse smoke            # 10 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 526 tests
+.venv\Scripts\python.exe -m jesse smoke            # 11 scenarios, real stack, ~4min
+.venv\Scripts\python.exe -m pytest -q              # 532 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -696,3 +696,42 @@ duplicate-definition/undefined-name lint and `git diff --check` passed.
 All ten real-stack smoke scenarios passed in 224s plus 7s warmup. The updated memory
 scenario spoke the exact acknowledgement, extracted the preference on its first
 attempt and recalled it through a fresh connection. No live memory data was edited.
+
+## 19. Requested memory survives a follow-up — 2026-10-03
+
+Two deterministic regressions reproduced the gap after an acknowledged memory
+request: a fresh wake cancelled its extraction, while a continuous follow-up could
+build its recall context before the fact existed. If extraction was still waiting
+for the model lock, the new THINKING state made it skip entirely. The raw exchange
+survived, but the fact could remain unavailable until a later restart retry.
+
+Explicit `remember that ...` jobs are now tracked separately, survive a fresh wake,
+and can finish when a turn is active. Multiple queued requests remain tracked even
+after `_extract_task` points at a newer exchange. Personal/broad memory questions
+wait for those jobs before reading facts. Forget requests wait as well, preventing
+an unfinished explicit write from recreating a just-deleted fact. Cancelling the
+follow-up does not cancel the underlying memory request. Normal shutdown waits for
+tracked requests; forced shutdown still relies on the persisted exchange/retry path.
+
+Incidental background extraction retains its existing cancellation/restart behavior.
+Cancelling an asyncio waiter cannot stop a blocking Ollama HTTP thread, so cancelled
+extraction now drains its worker while still holding the shared model lock, even
+across repeated cancellation. It then stays unprocessed for retry. This prevents a
+new generation from overlapping that old worker; it does not abort the HTTP request.
+An immediate recall/forget or model reply may therefore wait for queued requests to
+finish or time out (currently 90 seconds per request). The explicit-memory wait is
+limited to recognized personal/broad memory questions and forget requests.
+
+Extraction can still fail or return no facts; the acknowledgement remains tentative.
+No dedupe thresholds, recall ranking, fact parsing or production memory were changed.
+The new `memory-followup` smoke scenario holds the model gate, acknowledges a fact,
+starts a fresh wake and immediate personal query, then releases the gate. It checks
+the real model's answer, the stored fact and the original exchange's processed flags.
+
+Six new tests cover fresh-wake and continuous recall, multiple requests, forget
+ordering, cancelling a follow-up and repeated cancellation during a blocking worker.
+The full unit suite passed: 532 tests in 7.69s.
+Final verification on 2026-10-04: all 11 real-stack smoke scenarios passed in 245s
+plus 17s warmup. The new immediate-recall scenario answered "Turquoise, dude." and
+confirmed the requested fact and processed exchange in SQLite. The birthday-plan
+scenario answered "Sky-diving next month." No live memory data was edited.

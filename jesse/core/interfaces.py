@@ -159,8 +159,8 @@ class Embedder(Protocol):
 @runtime_checkable
 class MemoryStore(Protocol):
     """Structured facts (SQLite) + semantic recall (sqlite-vec). Reads are budgeted:
-    callers take the top-K only. Writes happen in the idle gap after a reply, never
-    concurrent with the next turn."""
+    callers take the top-K only. Writes stay on the event-loop thread. Explicit
+    memory requests finish before a dependent recall or forget operation."""
 
     def add_fact(self, fact: Fact) -> None:
         """Upsert a fact. Conflict policy: last-write-wins on the same subject."""

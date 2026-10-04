@@ -355,6 +355,16 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "unavailable. Questions about existing memories still use recall",
         False,
     ),
+    ProgressEntry(
+        "v2.0.10 — a follow-up no longer drops a requested memory", "2026-10-03",
+        "he could acknowledge a request to remember something, then lose that "
+        "work when Mithilesh spoke again. Those requests now keep going, and a "
+        "question about memory waits for them before he looks for the answer. "
+        "Forgetting waits too, so an unfinished write does not put the fact "
+        "straight back. He can still fail to extract a fact; he has not learned "
+        "to pretend otherwise",
+        True,
+    ),
 ]
 
 
