@@ -383,6 +383,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "was heard",
         True,
     ),
+    ProgressEntry(
+        "v2.0.13 — questions are not preferences", "2026-10-04",
+        "a misheard one-word question became a coffee preference he had never "
+        "been told. He now keeps clear questions, isolated words and bare "
+        "acknowledgments out of fact extraction, including on restart. They "
+        "remain in the conversation record. Explicit statements can still "
+        "be remembered; this does not make every model-generated fact reliable",
+        True,
+    ),
 ]
 
 

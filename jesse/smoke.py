@@ -408,6 +408,29 @@ async def scenario_memory_followup(mouth: Mouth, db: Path) -> Result:
         store.close()
 
 
+async def scenario_extraction_guard(mouth: Mouth, db: Path) -> Result:
+    """The ambiguous live transcript must not become a durable coffee preference."""
+    orch, store, _ = _build(ScriptedTransport([]), db)
+    try:
+        for text in ("Nes?", "Nes", "Do I like coffee?", "what is my favorite drink"):
+            orch._remember_turn(text, "I don't know.")
+            await orch._extract_task
+        no_inventions = not store.all_facts()
+        processed = not store.unprocessed_exchanges()
+        orch._remember_turn("Remember that my favorite color is turquoise.", "Got it.")
+        await orch._extract_task
+        facts = [f.text for f in store.all_facts()]
+        kept_declaration = any("turquoise" in text.lower() for text in facts)
+        passed = no_inventions and processed and kept_declaration
+        return Result("extraction-guard", passed,
+                      "nonstatements rejected and explicit preference stored" if passed else
+                      "extraction input guard failed",
+                      checks=[f"no invented facts: {no_inventions}; exchanges processed: {processed}",
+                              f"real model extracted the declaration: {facts!r}"])
+    finally:
+        store.close()
+
+
 async def scenario_timer(mouth: Mouth, db: Path) -> Result:
     """A spoken timer reaches the real scheduler and actually fires."""
     checks = []
@@ -905,6 +928,7 @@ SCENARIOS = [
     ("transcription-recovery", scenario_transcription_recovery),
     ("memory", scenario_memory),
     ("memory-followup", scenario_memory_followup),
+    ("extraction-guard", scenario_extraction_guard),
     ("personal-recall", scenario_personal_recall),
     ("timer", scenario_timer),
     ("alert-recovery", scenario_alert_recovery),

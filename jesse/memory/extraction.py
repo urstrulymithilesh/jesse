@@ -61,6 +61,30 @@ _HYPOTHETICAL_START = re.compile(
     r"^\s*(?:what\s+if|if|suppose|supposing|imagine|let['’]s\s+pretend)\b", re.IGNORECASE,
 )
 
+_QUESTION_AUX = r"(?:am|is|are|was|were|do|does|did|can|could|will|would|should|have|has|had)"
+_QUESTION_START = re.compile(
+    rf"^\s*(?:(?:what|when|where|who|why|how|which)(?:['’]s|\s+{_QUESTION_AUX})"
+    rf"|{_QUESTION_AUX}\s+(?:i|we|you|he|she|they|it|my|our|your))\b", re.IGNORECASE,
+)
+_ACKNOWLEDGMENTS = frozenset(("yes please", "no thanks", "no thank you", "thank you"))
+
+
+def _only_nonstatements(text: str) -> bool:
+    """Reject clear questions, one-word fragments and bare acknowledgments.
+
+    The extractor has no previous question to resolve a standalone answer against.
+    Keep mixed turns intact for the model if any sentence could be a declaration;
+    this is a narrow input guard, not a general test of factual grounding.
+    """
+    for sentence in re.split(r"(?<=[.!?])\s+", text.strip()):
+        words = re.findall(r"\b\w+(?:['’]\w+)*\b", sentence.lower())
+        if len(words) < 2 or " ".join(words) in _ACKNOWLEDGMENTS:
+            continue
+        if sentence.rstrip(" \t\r\n\"'”’").endswith("?") or _QUESTION_START.match(sentence):
+            continue
+        return False
+    return True
+
 
 class FactExtractor:
     """Extract from the user's words only, never from Jesse's generated reply.
@@ -74,7 +98,7 @@ class FactExtractor:
 
     def extract(self, user_text: str) -> str:
         statement = parse_remember_request(user_text) or user_text
-        if _HYPOTHETICAL_START.match(statement):
+        if _HYPOTHETICAL_START.match(statement) or _only_nonstatements(statement):
             return "[]"
         messages = [Message("system", EXTRACTION_PROMPT),
                     Message("user", f"The user said: {user_text}")]

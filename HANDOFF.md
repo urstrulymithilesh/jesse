@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-04 · 544 tests · 12/13 smoke, failed scenario passed on rerun (§21) · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-05 · 564 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -77,7 +77,7 @@ belongs to one person, sends nothing anywhere.
 | **Knowledge (RAG)** | `jesse learn <name> <path>`. Trigger = naming the subject, or a keyword-ask. Not a distance gate — that inverted on the second corpus. |
 | **Sources (RSS)** | ON. 6h interval, silent fetch, reactive "what's new". Instruction-shaped items dropped at ingest. |
 | **Remote** | **PAUSED — see §4.** Built and left in place. |
-| **Smoke harness** | 13 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
+| **Smoke harness** | 14 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
 
 **Honesty guards:** real clock injected every turn; hard rule that he knows only what he is
 told/given/timestamped; anchoring blocks for broad and temporal questions; recall-mode
@@ -101,7 +101,7 @@ drops few-shot examples for memory questions.
 | Actions | 23 targets · search depth 4 · top-5 |
 | Knowledge | name + keyword trigger · top-2 · 800-char chunks · gate 0.46 |
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
-| Progress log | 44 entries |
+| Progress log | 45 entries |
 
 Everything sits behind `jesse/core/interfaces.py`. Swapping a model or engine is a
 config change.
@@ -298,13 +298,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               544 tests
+tests/               564 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
-.venv\Scripts\python.exe -m jesse smoke            # 13 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 544 tests
+.venv\Scripts\python.exe -m jesse smoke            # 14 scenarios, real stack, ~4min
+.venv\Scripts\python.exe -m pytest -q              # 564 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -791,6 +791,41 @@ An unchanged targeted rerun passed in 26s plus 7s warmup: Whisper heard "Yes?" a
 Jesse answered "Ferrets sleep 14-18 hours a day, in short bursts." This is not a
 fully green single run and does not fix one-word recognition. The failed scenario
 also logged a spurious `coffee preference` extraction from the ambiguous exchange;
-that remains a separate extraction issue to investigate. All databases here were
+that was investigated and guarded in §22. All databases here were
 temporary. Logs are in ignored `data/smoke-alert-recovery.log` and
 `data/smoke-alert-knowledge-rerun.log`; production memory was untouched.
+
+## 22. Questions and isolated words are not durable facts — 2026-10-04
+
+Reproduced §21's extraction failure directly with the real schema-constrained,
+temperature-zero model: `Nes?` yielded subject `coffee preference`, text `the user
+likes Nes`, confidence 0.8. `Nes` yielded `the user's name is Nes`, and `Do I like
+coffee?` yielded `the user does not like coffee`, also at 0.8. These pass the old
+third-person/length/confidence checks. This is input interpretation by the extractor,
+not recall ranking or the 0.88 dedupe threshold. No prompt change was needed.
+
+FactExtractor now rejects turns consisting only of recognized questions,
+single-word fragments or bare acknowledgments before asking the model. It handles
+question marks and common unpunctuated interrogative openings, including contractions.
+The same gate applies to live jobs, explicit requests and startup catch-up. Rejected
+exchanges stay in the transcript and are marked processed, so they do not repeatedly
+reach extraction. This does not alter the conversation reply or document routing.
+
+Short declarations such as `I like tea` and `I'm vegetarian` still reach the model,
+as do mixed statement/question turns, passed unchanged. This intentionally does not
+resolve an isolated answer against a previous question: the user-only extractor
+does not have that context. It can miss a fact phrased as a question or a standalone
+name; unsupported question forms and mixed turns still depend on the model. It is
+not a general grounding verifier or a repair of existing stored facts. No production
+memory was inspected or changed, and no fact merging threshold was modified.
+
+Twenty regression/control cases cover the gate, retained declarations, real SQLite
+persistence and startup catch-up. Fourteen failed before the fix. All 564 tests
+passed in 6.66s; changed-file duplicate-definition/undefined-name lint and diff checks
+passed. The new `extraction-guard` smoke scenario checks the reproduced bad inputs
+through the orchestrator/store, then verifies a real model still stores an explicit
+turquoise preference.
+All 14 real-stack smoke scenarios passed in 257s plus 7s warmup, including the
+previously intermittent knowledge scenario. The new guard scenario stored no facts
+from the four nonstatement probes, marked those exchanges processed, and saved the
+explicit turquoise preference. The ignored log is `data/smoke-extraction-guard.log`.
