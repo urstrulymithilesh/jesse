@@ -39,11 +39,18 @@ class OpenWakeWordDetector:
                 "    python -c \"import openwakeword.utils as u; u.download_models()\""
             ) from e
 
-    def process(self, frame: bytes) -> bool:
+    def score(self, frame: bytes) -> float:
         self._ensure()
         assert self._model is not None
         samples = np.frombuffer(frame, dtype=np.int16)
         if len(samples) != CHUNK_SAMPLES:
-            return False
+            return 0.0
         scores = self._model.predict(samples)
-        return any(score >= self._threshold for score in scores.values())
+        return float(max(scores.values(), default=0.0))
+
+    def process(self, frame: bytes) -> bool:
+        return self.score(frame) >= self._threshold
+
+    def reset(self) -> None:
+        self._ensure()
+        self._model.reset()

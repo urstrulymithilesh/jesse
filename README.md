@@ -1,6 +1,6 @@
 # Jesse
 
-A **fully-local voice AI partner**. His brain, his memory and every piece of
+A **local voice AI friend**. His brain, his memory and every piece of
 processing run on this machine and only this machine — no cloud APIs, no cloud costs,
 and no conversation or memory ever leaving it. Say a wake word, talk to Jesse, and he
 replies in voice — and he *remembers* you across sessions.
@@ -20,19 +20,18 @@ clean interface — not a rewrite.
 
 ```
   AudioTransport → WakeWord → Transcriber → LLM → Synthesizer → AudioTransport
-   (WASAPI mic)    (openWW)   (whisper CPU) (llama3  (Piper CPU)    (headset out)
-                                            GPU)
+   (local mic)     (openWW)   (whisper CPU) (Ollama) (Piper CPU)   (headset out)
                          │                    │
                     Orchestrator (asyncio) ── MemoryStore (SQLite + sqlite-vec)
                     preemption state machine   async idle-gap fact extraction
                     Scheduler (SQLite-persisted timers & reminders)
 ```
 
-**Compute split:** GPU does reasoning only (the model stays resident). CPU hears (faster-whisper
-int8), speaks (Piper), and embeds. Nothing contends for the 4GB.
+**Current hardware:** reasoning runs on CPU because GPU discovery fails on this
+GTX 1050. Transcription, synthesis and embeddings also run on CPU.
 
 **Stack (all free / local):** Ollama + llama3.2 · faster-whisper · Piper ·
-openWakeWord + Silero VAD · SQLite + sqlite-vec · custom asyncio orchestrator.
+openWakeWord + energy VAD · SQLite + sqlite-vec · custom asyncio orchestrator.
 
 ## Status
 
@@ -66,11 +65,11 @@ Working end to end, on-device:
   gets the answer. He answers from the passages or says they don't cover it — right
   about five times in six, which is the honest number, not a solved problem.
 
-- **Reading his own sources** (off by default) — `python -m jesse digest --fetch`, or
+- **Reading his own sources** (enabled in current config) — `python -m jesse digest --fetch`, or
   on a 6-hourly schedule once `CONFIG.digest.enabled` is on. RSS/Atom feeds only, no
   web scraping. He never brings it up unprompted; ask "anything new?" and he tells
   you what actually came in, or says nothing has. This is the only part of Jesse that
-  touches the network, which is why it ships switched off.
+  uses outbound requests to configured public feeds.
 
 - **Reaching him from away** — `python -m jesse run --remote` serves a page your phone
   opens over [Tailscale](https://tailscale.com). It listens continuously, and the audio
@@ -79,8 +78,18 @@ Working end to end, on-device:
   tailnet can reach it, and every request carries a token. Side-effect actions ask for
   confirmation when you're away.
 
-Deferred: GPU acceleration (Ollama's Vulkan discovery times out on this GTX 1050, so
-the LLM runs ~12 tok/s on CPU), a custom wake word, and voice cloning.
+Full-vision completion is tracked in **[RELEASE.md](RELEASE.md)**. Custom `yo Jesse`
+training and cloning Mithilesh's own voice are active milestones; neither trained
+asset exists yet. Phone-number integration remains unfinished. The Tailscale path
+is built but paused. GPU acceleration remains deferred.
+
+On Windows, **double-click `Start-Jesse.cmd`** after setup, or run it from a terminal.
+It selects this project's Python, the real Ollama model, and the local text UI.
+It accepts the same extra options as `run`; startup still calibrates the mic unless
+you supply a measured gain/threshold pair or `--no-calibrate`.
+
+See **[training/README.md](training/README.md)** for local own-voice recording,
+training/export instructions, custom-model selection, and wake-word evaluation.
 
 ## Setup
 
@@ -93,12 +102,14 @@ py -3.13 -m venv .venv
 pip install -r requirements.txt
 ollama pull llama3.2
 # His voice (~60MB, offline after this):
-python -m piper.download_voices en_US-amy-medium --download-dir models
+python -m piper.download_voices en_US-ryan-high --download-dir models
 # His ears — the wake-word models (~10MB, offline after this):
 python -c "import openwakeword.utils as u; u.download_models()"
+# Download/cache transcription and embedding models before going offline:
+python -c "from jesse.stt.whisper import WhisperTranscriber; from jesse.memory.embedder import FastEmbedEmbedder; WhisperTranscriber()._ensure(); FastEmbedEmbedder().embed(['setup'])"
 ```
 
-Those three downloads are all Jesse needs to *become* himself. After them, every
+After these model downloads, every
 part of him that thinks, listens, speaks or remembers works with the ethernet cable
 pulled out. The only things that want a connection are the optional extras — reading
 your RSS feeds, and reaching his remotely — and losing it costs you those, not his.
@@ -177,8 +188,8 @@ cancellation test.
 Two layers, deliberately:
 
 ```bash
-.venv\Scripts\python.exe -m pytest        # 399 unit tests with fakes, ~2 seconds
-.venv\Scripts\python.exe -m jesse smoke    # 9 scenarios on the REAL stack, ~4 minutes
+.venv\Scripts\python.exe -m pytest        # unit tests; current count in HANDOFF.md
+.venv\Scripts\python.exe -m jesse smoke    # real-stack scenarios, roughly 4-5 minutes
 ```
 
 (If you have run `.venv\Scriptsctivate`, plain `pytest` and `python -m jesse smoke`

@@ -19,7 +19,7 @@ from jesse.config import CONFIG
 
 
 def _status() -> int:
-    print(f"Jesse v{__version__} — fully-local voice partner")
+    print(f"Jesse v{__version__} — local voice friend")
     print(f"  reasoning : {CONFIG.reasoning.model} via {CONFIG.reasoning.ollama_host}")
     print(f"  stt       : faster-whisper {CONFIG.speech.whisper_model} ({CONFIG.speech.whisper_compute_type}, CPU)")
     print(f"  wake/stop : {CONFIG.wake.model} / {CONFIG.wake.stop_word}")
@@ -30,6 +30,8 @@ def _status() -> int:
     print("           python -m jesse run --ui  (adds the text UI at 127.0.0.1:8765)")
     print("           python -m jesse run --remote  (adds the phone client, port 8766)")
     print("           python spike.py        (prove the hardware)")
+    print("           python -m jesse voice-record --device N  (record your own voice dataset)")
+    print("           python -m jesse wake-check --help  (evaluate a trained wake model)")
     return 0
 
 
@@ -422,11 +424,13 @@ def _positive_audio_override(argv: list[str], flag: str) -> float | None:
 
 
 def _run(argv: list[str]) -> int:
+    from jesse.customization import run_asset_options
     try:
+        assets = run_asset_options(argv)
         gain_override = _positive_audio_override(argv, "--gain")
         threshold_override = _positive_audio_override(argv, "--threshold")
     except ValueError as exc:
-        print(f"\nAudio options: {exc}")
+        print(f"\nLaunch options: {exc}")
         return 2
 
     if "--ollama" in argv:
@@ -460,9 +464,14 @@ def _run(argv: list[str]) -> int:
         from jesse.ui.server import start as start_ui
         channel = TextChannel()
         url = start_ui(channel, port=int(_flag_value(argv, "--port") or 8765))
-    orch, voice_label, brain_label = build_orchestrator(
-        use_ollama="--ollama" in argv, input_device=device, text_channel=channel,
-    )
+    try:
+        orch, voice_label, brain_label = build_orchestrator(
+            use_ollama="--ollama" in argv, input_device=device, text_channel=channel, **assets,
+        )
+    except Exception as exc:
+        release(pid_file)
+        print(f"\nCould not start Jesse: {exc}")
+        return 1
 
     # Remote: his phone, over his own tailnet. Wraps the desk transport rather than
     # replacing it, so the orchestrator above is untouched (see remote/transport.py).
@@ -521,13 +530,13 @@ def _run(argv: list[str]) -> int:
         "OS default (run `python diagnose.py` to pick your mic)"
     )
     print("=" * 60)
-    print(" Jesse — walking skeleton (Phase 0)")
+    print(" Jesse — local voice friend")
     print(f"   brain : {brain_label}")
     print(f"   voice : {voice_label}")
     print(f"   mic   : {dev_label}  (gain x{orch.transport.gain:.1f})")
     print(f"   VAD   : speech > {orch.vad.threshold:.0f} RMS, endpoint after {CONFIG.audio.vad_silence_ms}ms "
           f"silence (min speech {CONFIG.audio.vad_min_speech_ms}ms), pre-roll {CONFIG.audio.preroll_ms}ms")
-    print("   wake  : say 'hey jarvis'  (placeholder — 'yo Jesse' gets trained later)")
+    print(f"   wake  : say '{assets.get('wake_phrase', CONFIG.wake.model.replace('_', ' '))}'")
     print("   stop  : say the stop word while Jesse is speaking to cut him off")
     if url:
         print(f"   ui    : {url}  (type there; it joins the same conversation)")
@@ -592,6 +601,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if argv and argv[0] == "calibrate":
         return _calibrate_cmd(argv[1:])
+    if argv and argv[0] == "voice-record":
+        from jesse.voice_record import main as record_voice
+        return record_voice(argv[1:])
+    if argv and argv[0] == "wake-check":
+        from jesse.wake_check import main as check_wake
+        return check_wake(argv[1:])
     if argv and argv[0] == "say":
         return _say_cmd(argv[1:])
     if argv and argv[0] == "memory":

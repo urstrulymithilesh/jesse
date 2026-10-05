@@ -392,6 +392,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "be remembered; this does not make every model-generated fact reliable",
         True,
     ),
+    ProgressEntry(
+        "v2.0.14 — a path to his own wake word and voice", "2026-10-05",
+        "Mithilesh wants the full version of him, with yo Jesse and a clone of "
+        "his own voice. He can now load explicitly selected local wake and voice "
+        "models, and there are tools to record reviewed voice clips and measure "
+        "wake detection. The trained models and real-world acceptance are still "
+        "ahead; he has not acquired the new voice or wake word yet",
+        True,
+    ),
 ]
 
 

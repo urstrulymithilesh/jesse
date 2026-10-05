@@ -16,7 +16,9 @@ def _print_state(state: ConversationState) -> None:
 
 
 def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = None,
-                       text_channel=None):
+                       text_channel=None, wake_model: str | None = None,
+                       wake_phrase: str | None = None, wake_threshold: float = 0.5,
+                       voice: str | None = None):
     """Returns (orchestrator, voice_label, brain_label). input_device overrides
     CONFIG.audio.input_device (from `run --device N`)."""
     from jesse.audio.transport import LocalAudioTransport
@@ -34,8 +36,11 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
         input_device=in_dev, output_device=CONFIG.audio.output_device,
         gain=CONFIG.audio.capture_gain,
     )
-    wake = OpenWakeWordDetector(CONFIG.wake.model)
-    stopword = OpenWakeWordDetector(CONFIG.wake.stop_word)
+    wake = OpenWakeWordDetector(wake_model or CONFIG.wake.model, threshold=wake_threshold)
+    stopword = OpenWakeWordDetector(wake_model or CONFIG.wake.stop_word, threshold=wake_threshold)
+    if wake_model is not None:
+        wake._ensure()  # reject incompatible exports before capture or memory writes
+        stopword._ensure()
     vad = EnergyVad(
         threshold=CONFIG.audio.vad_threshold,
         silence_ms=CONFIG.audio.vad_silence_ms,
@@ -43,9 +48,13 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
     )
     transcriber = WhisperTranscriber()
 
-    if PiperSynthesizer.is_available():
-        synthesizer = PiperSynthesizer()
-        voice_label = f"Piper ({CONFIG.speech.piper_voice})"
+    if voice is not None and not PiperSynthesizer.is_available(voice):
+        raise ValueError(f"Requested Piper voice {voice!r} is unavailable")
+    if PiperSynthesizer.is_available(voice):
+        synthesizer = PiperSynthesizer(voice=voice)
+        if voice is not None:
+            _ = synthesizer.sample_rate  # validate custom export/config before startup
+        voice_label = f"Piper ({voice or CONFIG.speech.piper_voice})"
     else:
         synthesizer = StubSynthesizer()
         voice_label = "STUB (install the Piper binary to swap in real speech)"
@@ -97,6 +106,7 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
         transport=transport, wake=wake, stopword=stopword, vad=vad,
         transcriber=transcriber, llm=llm, synthesizer=synthesizer,
         system_prompt=SYSTEM_PROMPT, preroll_frames=ms_to_chunks(CONFIG.audio.preroll_ms),
+        wake_phrase=wake_phrase,
         store=store, extractor=extractor, episodes=episodes, summariser=summariser,
         corpus=corpus, digest=digest,
         text_channel=text_channel,

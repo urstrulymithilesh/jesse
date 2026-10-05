@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-05 · 564 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-05 · 585 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -101,7 +101,7 @@ drops few-shot examples for memory questions.
 | Actions | 23 targets · search depth 4 · top-5 |
 | Knowledge | name + keyword trigger · top-2 · 800-char chunks · gate 0.46 |
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
-| Progress log | 45 entries |
+| Progress log | 46 entries |
 
 Everything sits behind `jesse/core/interfaces.py`. Swapping a model or engine is a
 config change.
@@ -132,8 +132,10 @@ config change.
 - **LLM tool-calling.** Measured, temp 0: llama3.2 6/7 correct but **7/7 false calls on
   plain conversation**; nemotron 0/7 false but 3/7 correct and malformed args. Neither
   is usable. The deterministic registry stands.
-- **Custom wake word + voice cloning.** One future session; shares a training pipeline.
-  Target word: "yo Jesse". Training is cloud/Colab; integration is ~5 lines.
+- **Custom wake word + voice cloning: ACTIVE as of 2026-10-05.** Mithilesh explicitly
+  chose the full vision. Target phrase is "yo Jesse"; clone his own voice, American,
+  about age 21, charismatic. See `RELEASE.md`, `training/README.md` and §23. Neither
+  trained asset exists yet; do not describe this as finished or keep postponing it.
 - **Voice authentication.** Pairs with the voice phase.
 - **Multi-turn slot-filling.** "Change the timer" → "to what?" is not supported by
   design. He asks for the missing piece; the request must come in one utterance.
@@ -149,7 +151,7 @@ config change.
 |---|---|---|
 | 1 | Reliability / smoke harness | **done** |
 | 2 | Continuous conversation | **done** |
-| 3 | Custom wake word + voice cloning | future ("yo Jesse") |
+| 3 | Custom wake word + voice cloning | **active** — collection, integration and evaluation tools ready; training pending |
 | 4 | Voice authentication | skipped by choice |
 | 5 | Episodic + temporal memory | **done** |
 | 6 | GPU | parked, externally blocked |
@@ -159,9 +161,8 @@ config change.
 | 10 | Remote access | built, **PAUSED**; real goal is VoIP |
 | 11 | Phone number (Twilio) | **in progress** — see §11 |
 
-Every roadmap item is built, skipped, or parked with a reason. What is left is depth:
-the custom wake word, voice auth, GPU if hardware ever cooperates, and the rough edges
-in §8.
+The completion gates and execution order now live in `RELEASE.md`. Prioritize
+trained custom assets and phone access over an unbounded stream of unrelated fixes.
 
 ---
 
@@ -298,13 +299,13 @@ jesse/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               564 tests
+tests/               585 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m jesse smoke            # 14 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 564 tests
+.venv\Scripts\python.exe -m pytest -q              # 585 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
@@ -359,27 +360,27 @@ model". Fix: `python -c "import openwakeword.utils as u; u.download_models()"`.
 
 ## 10. Where things stand
 
-Against the full vision: **~60/100**. Voice, personality, memory, episodic memory,
-timers, always-listening, text UI, agentic execution, document RAG and proactive
-sources all work. Missing: the custom wake word, voice auth, GPU, and phone access.
+Mithilesh chose **the full vision** on 2026-10-05, including a custom wake word,
+his own voice clone and phone calls. `RELEASE.md` replaces the old subjective
+percentage estimates with explicit acceptance gates. Core features work, but
+trained custom assets, live local acceptance and phone integration are unfinished.
 
-Against "something worth using every day": **70–80%**. He wakes, listens, remembers,
-keeps time, acts on the computer, reads what he is given, admits what he does not know,
-and can be talked to or typed at.
+**Next:** collect the reviewed voice pilot with `jesse voice-record` and provision
+the separate GPU training environment for `yo Jesse` and Piper. The user supplied
+the voice brief (§23) but has not recorded samples here. Then evaluate/audition the
+exports locally, validate normal conversation, and complete phone echo/transport
+integration (§11). Voice authentication remains skipped by choice; GPU runtime
+acceleration remains optional. Do not quietly reduce the goal to a local-only release.
 
-**Next:** use the measured gain/threshold pair in a normal local conversation (§16).
-The calibrated echo/endpoint probe passed one setup; full-duplex phone audio still
-needs its own echo-control strategy before phone access ships (§11). Persona tuning,
-registry expansion and "yo Jesse" remain later work.
-
-**Verification, 2026-10-01:** 427 unit tests passed in 10.09s; the real-stack smoke
+**Historical verification, 2026-10-01 (superseded by later checks):** 427 unit tests passed in 10.09s; the real-stack smoke
 run passed 7/9 scenarios (647s plus model warmup). Conversation, timers, barge-in,
 wake-after-reply, actions, knowledge and remote passed. Memory extraction returned
 no facts on both attempts despite correctly transcribing the turquoise preference;
 conversation turns were persisted. Sources failed because Whisper transcribed the
 first "anything new" as "Anything mail?", so the feed parser was never triggered;
 the second utterance was transcribed correctly and the headline was read. These
-failures remain open; this run does not establish whether they predate the fix.
+failures led to the later extraction/recall fixes; one-word transcription remains
+imperfect. Use the latest header/entry for current verification.
 
 ---
 
@@ -829,3 +830,43 @@ All 14 real-stack smoke scenarios passed in 257s plus 7s warmup, including the
 previously intermittent knowledge scenario. The new guard scenario stored no facts
 from the four nonstatement probes, marked those exchanges processed, and saved the
 explicit turquoise preference. The ignored log is `data/smoke-extraction-guard.log`.
+
+## 23. Full-vision milestone tooling — 2026-10-05
+
+User direction: finish the full vision, including custom wake and voice. Voice
+brief: American, about 21, charismatic; he will clone **his own voice**. Runtime
+integration is ready for exported assets via `run --wake-model FILE.onnx
+--wake-phrase "yo Jesse" --wake-threshold 0.5 --voice en_US-jesse-medium`.
+The custom detector handles wake and interruption; the spoken phrase separately
+drives transcript cleanup. Custom exports load before capture/memory construction;
+bad exports produce a startup error and release the instance claim. Explicit voice
+selection requires ONNX/config files and never silently uses a stub. Defaults are
+unchanged and no trained custom asset has been installed.
+
+`voice-record` records a resumable, reviewed pilot: countdown, fixed-duration
+capture, near-silence/clipping checks, playback, explicit keep/retry/skip/quit.
+Accepted clips are unique mono 22050-Hz PCM WAVs plus Piper-compatible metadata
+in ignored `data/voice-training`. Existing takes are not overwritten. Forty
+original prompts are a pilot, not a production dataset. No real voice samples
+were captured or uploaded during implementation; hardware recording remains to be
+validated with the user. See `training/README.md` for the separate training workflow.
+
+`wake-check` evaluates labeled 16-kHz WAV folders, reporting per-clip scores/events,
+sampled recall, false activations/hour, threshold and model SHA-256. It requires
+20 positive clips and one hour negative audio before its sample gate can pass;
+human coverage and live echo/interruption acceptance remain separate. A real
+stock-asset probe loaded the explicit ONNX path and Ryan voice, detected synthetic
+"hey jarvis" at 0.998, did not fire on one negative, and correctly returned failure
+for insufficient evaluation coverage. This verifies tooling, not `yo Jesse` quality.
+
+`Start-Jesse.cmd` uses the repo venv, real Ollama and local UI from any working
+directory. README now reflects the actual voice, CPU reasoning, energy VAD, model
+cache setup and active full-vision milestones. `RELEASE.md` is the finish checklist;
+the wake JSON is an overlay for the upstream training notebook, not a trained model.
+
+Validation: 585 unit tests passed in 13.20s, including 21 new asset/recording/evaluation
+cases. Undefined-name/duplicate-definition lint and diff checks passed.
+All 14 real-stack smoke scenarios passed in 270s plus 16s warmup. The launcher
+was invoked from outside the repo and correctly selected the project venv/root,
+then rejected a missing custom asset before audio startup. Default-runtime smoke
+does not validate the untrained custom assets or the recorder's physical mic path.

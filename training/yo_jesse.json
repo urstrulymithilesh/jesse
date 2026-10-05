@@ -1,0 +1,11 @@
+{
+  "model_name": "yo_jesse",
+  "target_phrase": ["yo Jesse"],
+  "custom_negative_phrases": ["yo", "Jesse", "no Jesse", "oh Jessie", "your jersey", "Joe said", "go gently", "yes please", "hey Jarvis"],
+  "n_samples": 20000,
+  "n_samples_val": 2000,
+  "model_type": "dnn",
+  "layer_size": 32,
+  "steps": 50000,
+  "target_false_positives_per_hour": 0.2
+}

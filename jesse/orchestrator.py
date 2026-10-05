@@ -176,6 +176,7 @@ class Orchestrator:
         llm: LLM,
         synthesizer: Synthesizer,
         system_prompt: str = "",
+        wake_phrase: str | None = None,
         preroll_frames: int = 0,
         store: MemoryStore | None = None,
         extractor: FactExtractor | None = None,
@@ -190,6 +191,7 @@ class Orchestrator:
     ) -> None:
         self.transport = transport
         self.wake = wake
+        self.wake_phrase = wake_phrase or CONFIG.wake.model.replace("_", " ")
         self.stopword = stopword
         self.vad = vad
         self.transcriber = transcriber
@@ -410,7 +412,7 @@ class Orchestrator:
             text = (await asyncio.to_thread(self.transcriber.transcribe, audio)).strip()
             # Pre-roll includes the wake word; a mangled name before a comma can
             # also disable parsers anchored at the beginning of the utterance.
-            text = strip_vocative(strip_wake_prefix(text, CONFIG.wake.model))
+            text = strip_vocative(strip_wake_prefix(text, self.wake_phrase))
             transcribed = True
         except Exception as e:  # noqa: BLE001 - STT fails before the shared turn handler
             print(f"  [transcription failed] {type(e).__name__}: {e}")
