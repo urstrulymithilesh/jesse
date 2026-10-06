@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-05 · 585 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-06 · 596 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -870,3 +870,51 @@ All 14 real-stack smoke scenarios passed in 270s plus 16s warmup. The launcher
 was invoked from outside the repo and correctly selected the project venv/root,
 then rejected a missing custom asset before audio startup. Default-runtime smoke
 does not validate the untrained custom assets or the recorder's physical mic path.
+
+## 24. Free-tier Colab wake training prepared — 2026-10-06
+
+Mithilesh chose **Google Colab GPU only if free**. Do not purchase compute, enroll
+in a paid plan or upload his own voice recordings. Colab's free GPU availability
+and session duration are not guaranteed. This machine has no installed WSL distro,
+only Python 3.13, and no usable training environment; no voice pilot files exist.
+
+Open **training/train_yo_jesse.ipynb** through the Colab link in training/README.md.
+The notebook prepares a separate Python 3.10 venv, Torch 2.5.1/CUDA 12.1 and ORT
+GPU 1.20.2. It pins openWakeWord, the compatible dscripka Piper generator fork and
+public dataset revisions. No Drive mount, personal files or credentials are used.
+It checks the GPU/disk, probes real synthetic generation and CUDA embeddings, then
+downloads separate negative training/validation features, MIT RIRs and one AudioSet
+background shard. Budget roughly 25 GB downloads and 60 GiB initial free disk.
+
+The original upstream notebook is stale: its current rhasspy generator URL lacks
+the expected generate_samples.py, and the trainer uses five string "False" defaults.
+The latter accidentally activates optional TFLite conversion. A separate trainer
+copy changes those defaults to booleans; tests ensure unselected stages remain off.
+Validation features are a 2-D continuous stream (481345, 96), verified by reading
+the actual public NPY header. Training features are 3-D windows.
+
+Each stage stops on subprocess failure. Same-VM generation/downloads can resume;
+augmentation explicitly rewrites derived arrays to avoid interrupted partial files.
+Classifier training restarts on retry; VM deletion loses work. Download the ZIP
+before expiry. It includes ONNX, config, source revisions, package freeze, logs and
+an inference/hash report that explicitly leaves human acceptance false. Runtime
+defaults are unchanged. No new wake model has been trained or accepted.
+
+Notebook source is build_wake_notebook.py with tested wake_support.py helpers.
+Regenerate after changing either helper or yo_jesse.json; helper hashes account for
+Windows line endings. All 596 tests passed in 6.75s, including 11 new training cases.
+Linux/Python 3.10 dependency resolution passed using uv in an ignored scratch
+directory; this is not an installation/import test on Linux. Notebook and embedded
+script syntax passed. An actual ORT inference/export-package smoke used the existing
+stock Jarvis asset in data/wake-training-source/stock-export-probe; its renamed test
+copy is NOT a trained Jesse model. No production asset was changed.
+
+**Next:** first actual free Colab GPU run, repair any environment/runtime failures,
+download and evaluate the trained candidate locally. Own-voice recordings and
+phone transport remain separate unfinished gates. Progress v2.0.15 is deliberately
+not significant: prepared training is not an acquired wake-word capability.
+
+All 14 real-stack smoke scenarios passed in 260s plus 11s warmup; log:
+data/smoke-wake-colab.log. This remains stock-asset runtime validation, not evidence
+of Colab execution or yo Jesse detection quality. Staged Git blob hashes match the
+helper hashes embedded in the notebook.

@@ -401,6 +401,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "ahead; he has not acquired the new voice or wake word yet",
         True,
     ),
+    ProgressEntry(
+        "v2.0.15 — his wake-word training notebook is prepared", "2026-10-06",
+        "there is now a Colab notebook to train yo Jesse using synthetic speech "
+        "and public background audio. Mithilesh chose the free tier only. The "
+        "workflow checks its environment and packages a model for local testing, "
+        "but no GPU training run has finished and he still wakes to hey Jarvis. "
+        "His own voice recordings stay local",
+        False,
+    ),
 ]
 
 

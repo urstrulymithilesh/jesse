@@ -55,9 +55,49 @@ with Mithilesh first.
 Audition locally: `.venv\Scripts\python.exe -m jesse say "Good to hear from you." --voice en_US-jesse-medium`.
 Listen to held-out questions, numbers, names and long sentences before accepting it.
 
-## Train and measure the wake phrase
+## Train on Colab's free tier
 
-Use the [upstream automatic training notebook](https://github.com/dscripka/openWakeWord/blob/main/notebooks/automatic_model_training.ipynb).
+Open [Train yo Jesse in Colab](https://colab.research.google.com/github/urstrulymithilesh/jesse/blob/main/training/train_yo_jesse.ipynb).
+Choose **Runtime → Change runtime type → T4 GPU**, then run cells in order.
+The user chose Colab **only if free**. If no free GPU is available, stop and try
+later; do not buy compute units or select a paid runtime. Free resources and session
+lengths are [not guaranteed](https://research.google.com/colaboratory/faq.html#resource-limits).
+No paid service is invoked by the notebook.
+
+The notebook creates a separate Python 3.10 training environment, pins upstream
+source/dataset revisions, probes generation and GPU embeddings before large data
+downloads, then generates, augments, trains and packages an ONNX candidate.
+Allow roughly 25 GB of downloads and at least 60 GiB free ephemeral disk at setup.
+The feature dataset alone is 17.28 GB. These are synthetic/public datasets;
+the notebook does not upload voice recordings, mount Drive or clone a voice.
+
+Download the ZIP before the runtime expires. It contains the model, hash/provenance
+report, exact training config, installed package versions and logs. Copy the model
+to **models/yo_jesse.onnx**, retaining the report and logs for review.
+Training cannot resume across VM deletion; same-VM downloads/generation can be
+reused. Augmentation explicitly regenerates derived arrays on each attempt so an
+interrupted write is not reused. Classifier training starts again on a retry.
+
+**A full GPU training run is still unverified.** Local checks cover notebook/script
+syntax, helpers, Linux dependency resolution and export packaging; they do not prove
+model quality or completion within a free session. The notebook stops on subprocess
+failures. Do not continue to export after a failed training cell. It does not install
+a candidate into Jesse or change his default wake.
+
+The workflow fixes five string-valued boolean defaults in a separate copy of the
+pinned upstream trainer; otherwise an omitted TFLite flag still triggers TensorFlow
+conversion. Jesse needs ONNX only. The compatible Piper fork is pinned too: the
+upstream notebook's unpinned generator URL no longer supplies its expected script.
+
+For maintenance, edit **build_wake_notebook.py**/**wake_support.py** and regenerate
+with **.venv\Scripts\python.exe training/build_wake_notebook.py**. Rebuild after
+editing the JSON overlay too; the notebook verifies helper/overlay hashes before
+executing them. Tests check generated content and embedded script syntax.
+
+## Upstream alternative and local acceptance
+
+The [upstream automatic training notebook](https://github.com/dscripka/openWakeWord/blob/main/notebooks/automatic_model_training.ipynb)
+is an alternative reference, with the compatibility caveats above.
 Merge the values in `yo_jesse.json` into its configuration; retain the notebook's
 dataset, augmentation and feature-file paths. It is an overlay, not a standalone
 training environment. Synthetic positives and broad negatives are both required.

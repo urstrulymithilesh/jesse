@@ -21,6 +21,10 @@ Keep the current Ryan voice available until the clone is accepted.
 
 ## Execution order
 
+Training route chosen 2026-10-06: use the prepared Colab notebook on the **free tier
+only**. No paid compute is authorized. The notebook is prepared; its first GPU
+run and the trained model are still pending.
+
 1. Collect and review the voice pilot; prepare a separate GPU training environment.
 2. Train `yo Jesse` with the upstream synthetic-data pipeline. Evaluate held-out
    recordings and real background audio locally before selecting it for daily use.
