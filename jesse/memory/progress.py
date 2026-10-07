@@ -410,6 +410,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "His own voice recordings stay local",
         False,
     ),
+    ProgressEntry(
+        "v2.0.16 — the first own-voice audition", "2026-10-07",
+        "Mithilesh supplied a recording and chose OmniVoice. A local clone can "
+        "now produce an audition from a short excerpt, with a saved voice prompt "
+        "for later use. The first CPU run took over two minutes for a few seconds "
+        "of speech. Mithilesh still needs to judge the likeness, and Jesse's live "
+        "voice has not switched from Ryan",
+        False,
+    ),
 ]
 
 

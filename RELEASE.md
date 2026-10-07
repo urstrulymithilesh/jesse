@@ -8,11 +8,16 @@ milestones. This file tracks acceptance, not estimated percentages.
 |---|---|---|
 | Core conversation and memory | Unit suite and real-stack smoke pass | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
 | Custom wake phrase | Asset loading and WAV evaluation tooling; training recipe prepared | A trained `yo_jesse.onnx` meets sampled recall/false-activation gates and works with Mithilesh's real voice, including interruption and echo checks |
-| Own-voice clone | Voice brief agreed; reviewed recording workflow ready | Accepted recordings, trained/exported Piper model, user-approved voice audition, measured CPU synthesis speed and interruption test |
+| Own-voice clone | OmniVoice auditions generated locally from user recording; similarity and runtime integration pending | User-approved OmniVoice audition, suitable local inference speed, runtime integration and interruption test |
 | Phone calls | G.711 codec and existing transport seam | Echo-safe call transport, authenticated Media Streams/TwiML integration, public endpoint, and a real call using Mithilesh's account/number |
 | Release usability | Windows launcher and current instructions | Start reliably from a fresh terminal, diagnose missing assets, preserve memory across restart, document actual limitations |
 
 ## Voice brief
+
+2026-10-07: the user selected **k2-fsa/OmniVoice** and supplied his own recording.
+The current path is local zero-shot cloning and audition before integration;
+Piper fine-tuning is no longer the first voice experiment. A saved OmniVoice prompt
+requires the OmniVoice model and is not a Piper-compatible exported voice.
 
 Use Mithilesh's own voice, with American English, approximately age 21, and a
 charismatic, friendly delivery. He authorized cloning his own voice. The recordings
@@ -28,7 +33,8 @@ run and the trained model are still pending.
 1. Collect and review the voice pilot; prepare a separate GPU training environment.
 2. Train `yo Jesse` with the upstream synthetic-data pipeline. Evaluate held-out
    recordings and real background audio locally before selecting it for daily use.
-3. Expand the voice dataset, fine-tune/export Piper, audition it, and measure latency.
+3. Compare OmniVoice auditions from the user's recording, select an accepted voice,
+   and measure an inference backend fast enough for conversation before integration.
 4. Validate a normal local conversation using the selected wake/voice assets.
 5. Build phone transport with an explicit echo strategy. Local half-duplex tests
    are not evidence of full-duplex phone safety. Then connect the account/number

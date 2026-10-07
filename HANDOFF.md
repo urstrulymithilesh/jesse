@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-06 · 596 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-07 · 607 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -918,3 +918,46 @@ All 14 real-stack smoke scenarios passed in 260s plus 11s warmup; log:
 data/smoke-wake-colab.log. This remains stock-asset runtime validation, not evidence
 of Colab execution or yo Jesse detection quality. Staged Git blob hashes match the
 helper hashes embedded in the notebook.
+
+## 25. OmniVoice own-voice auditions — 2026-10-07
+
+The user chose k2-fsa/OmniVoice and supplied Audio.mp4 after reading the suggested
+paragraph. This supersedes Piper fine-tuning as the first cloning path. His prior
+authorization covers his own voice; no recording was uploaded to any service.
+The supplied file is unchanged. A local WAV extraction is 48.79 seconds long.
+
+OmniVoice source is in ignored data/OmniVoice at
+08be0b4ccbac3e13e374e86fbfead4b4cac343e2. A separate data/omnivoice-env contains
+Python 3.13, Torch/torchaudio 2.8.0+cpu and Transformers 5.3.0. The full package
+freeze is in data/voice-clone/environment.txt. Public model/tokenizer weights are
+in data/omnivoice-model at revision c5fdb5ccb189668d56333f77ba2629f4cd7535f4.
+Nothing was installed into Jesse's existing runtime environment.
+
+Local Whisper transcription supplied word timestamps. A complete conversational
+excerpt (3.10–9.10s) and an expressive excerpt (37.10–46.50s) became separate
+reference WAV/transcript pairs. Both produced the same new test sentence:
+“Hey, it's Jesse. Good to hear from you. What are we working on today?”
+Whisper recovered all intended words in both generated auditions.
+
+Actual CPU float32/32-step/four-thread measurements, including prompt encoding:
+conversational 136.87s for 4.44s audio; expressive 163.60s for 4.68s audio.
+Model load was 2.02s/3.33s. This is far too slow for live conversation; it is an
+audition workflow, not a completed low-latency TTS integration.
+
+Each ignored data/voice-clone/audition-* directory contains voice-prompt.pt,
+audition.wav, audition-listen.wav, report.json and whisper-check.txt. The listening
+copies use constant gain to peak 0.85 because raw output was quiet. No pitch,
+timing or dynamics processing was applied. Original generated WAVs are retained.
+Saved prompts are reference tokens, not standalone Piper voices; future synthesis
+still needs OmniVoice. See training/OMNIVOICE.md and training/clone_omnivoice.py.
+
+**Pending:** the user must judge likeness and choose an audition/reference.
+Then investigate a sufficiently fast local inference backend before changing
+Jesse's voice. Ryan remains the default, and the custom wake/phone milestones remain
+unfinished. Progress v2.0.16 is not significant because the live voice has not changed.
+The two actual offline OmniVoice generations plus transcription checks are this
+change's smoke verification; the core voice loop was not changed.
+
+Validation: 607 regression tests passed in 6.59s, including 11 reference/preview
+tests. Changed-file lint and diff checks passed. Audio, prompts, transcripts, model
+weights, environment files and source checkout remain ignored and uncommitted.

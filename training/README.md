@@ -1,5 +1,10 @@
 # Custom wake word and own-voice training
 
+**Voice update, 2026-10-07:** Mithilesh selected OmniVoice for his own-voice clone.
+Start with [the local OmniVoice audition workflow](OMNIVOICE.md). It uses a short
+reference without initial fine-tuning. The longer Piper dataset/training steps
+below are an alternative, not a prerequisite for the chosen OmniVoice path.
+
 Runtime stays local. These are training instructions, not evidence that custom
 models have been trained. Keep datasets/checkpoints in ignored `data/` or `models/`.
 Use a separate Linux/GPU environment for training; do not replace the runtime venv.
