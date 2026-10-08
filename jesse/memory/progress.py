@@ -438,6 +438,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "judge the likeness and try it on his headset; Ryan remains the default",
         True,
     ),
+    ProgressEntry(
+        "v2.0.19 — the first live clone did not sound right", "2026-10-08",
+        "Mithilesh heard the eight-step voice sample and said it sounded very "
+        "robotic. That voice is rejected. There are now two slower, full-precision "
+        "thirty-two-step auditions using different excerpts of his recording, "
+        "but correct words do not prove a natural voice. He still needs to judge "
+        "them, and Ryan remains the default",
+        False,
+    ),
 ]
 
 

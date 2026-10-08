@@ -3,8 +3,9 @@
 User selection: **k2-fsa/OmniVoice**, 2026-10-07. This replaces Piper fine-tuning
 as the first voice-clone experiment. The original recording, reference excerpts,
 transcripts, voice prompts and auditions stay in ignored **data/voice-clone/**.
-Nothing is uploaded. Jesse's running voice remains Ryan until an audition is
-accepted and a usable inference backend is integrated.
+Nothing is uploaded. Ryan remains the default. An optional inference backend is
+integrated, but the eight-step sample was rejected as robotic on 2026-10-08 and
+no own-voice candidate is accepted yet.
 
 OmniVoice conditions a shared model on a short recording; this first clone needs
 no fine-tuning. Its recommended reference length is 3–10 seconds. Keep complete
@@ -58,8 +59,8 @@ the recording: the reference supplies the voice and delivery.
 ## Remaining integration gate
 
 After the user chooses a candidate, measure multiple natural sentences, memory and
-timer responses, cancellation and restart behavior. OmniVoice is not wired into
-Jesse's real-time voice loop yet. Keep generated speech separate from microphone
+timer responses in a normal headset session. The optional backend has headless
+cancellation/restart evidence, but no user-approved voice. Keep generated speech separate from microphone
 evaluation recordings and never use the audition to claim human wake-word recall.
 
 ## GTX 1050 acceleration measured
@@ -119,7 +120,9 @@ the model and saved prompt once, keeping the codec on CPU and the diffusion mode
 on GPU. Jesse's existing Python environment needs no new dependencies. The worker
 uses offline model loading and has no HTTP listener. Piper stays the default.
 
-Create a private JSON profile in data/voice-clone/runtime-conversational.json:
+The private profile data/voice-clone/runtime-conversational.json reproduces the
+rejected speed experiment below. Keep it for diagnosis; do not recommend it as
+an accepted everyday voice:
 
 ~~~json
 {
@@ -163,3 +166,33 @@ reply succeeded in 21.51s including reload. Cold startup took 55.21s in this run
 earlier standalone benchmark setup was around 10s, so startup is variable.
 These single-run numbers are not a daily-use latency guarantee. This candidate
 still needs human likeness, naturalness, and live headset acceptance.
+
+## Robotic-voice rejection and quality comparison
+
+Mithilesh rejected runtime-smoke-2026-10-08/second.wav as very robotic on
+2026-10-08. Word accuracy and worker correctness did not establish voice quality.
+The rejected run used eight steps with the conversational reference and CUDA fp16.
+Upstream defaults to 32 steps and documents a quality/speed tradeoff; eight steps
+is a plausible contributor, not a proven cause of the reported robotic delivery.
+
+New local comparisons use the same sentence and fixed seed 42:
+
+| Reference | Precision | Steps | Generation | Audio | Purpose |
+|---|---|---:|---:|---:|---|
+| Conversational | CUDA fp32 | 8 | 5.39s | 4.86s | Controlled step-count baseline |
+| Conversational | CUDA fp32 | 32 | 16.55s | 4.94s | A: higher-step version |
+| Expressive | CUDA fp32 | 32 | 19.54s | 5.04s | B: change only the reference versus A |
+
+Outputs remain ignored under data/voice-clone/quality-conversational-fp32 and
+quality-expressive-fp32. Compare each steps-32-listen.wav. Both are mono 24kHz,
+unclipped, and local Whisper recovered the intended words. The preview is constant
+gain applied before PCM quantization; its length/rate match the raw output. Reference
+excerpts also contain complete phrases according to the saved word timings.
+
+This found no obvious sample-rate/clipping error. It cannot establish whether the
+remaining issue is prosody, voice identity, the recording, or model limitations.
+The fp32 samples are offline auditions (the runtime currently supports fp16/CPU).
+Do not change runtime defaults or claim a quality fix until the user judges them.
+If both fail, diagnose the reference/codec and try another clean excerpt before
+spending effort on more speed tuning. No new recording or cloud upload is needed
+for this comparison.

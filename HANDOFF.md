@@ -1063,3 +1063,38 @@ profile. Consider retaining the model through cancellation to reduce the 21.5s
 recovery pause. Custom yo Jesse training is still only a prepared free-Colab
 notebook, and phone-number integration remains unfinished. No paid compute or
 cloud upload of voice recordings has been authorized.
+
+## 28. User rejected the robotic clone — 2026-10-08
+
+After 426b21b, Mithilesh listened to runtime-smoke-2026-10-08/second.wav and said
+"no, sounds very robotic". Treat the eight-step fp16 conversational candidate as
+REJECTED, not merely unreviewed. Do not promote the existing runtime-conversational
+profile or treat ASR success as likeness/naturalness acceptance. Piper is unchanged.
+
+Investigated local upstream generation parameters, reference word boundaries, and
+audio formatting. The excerpts contain complete phrases (conversational ends at
+8.82s inside the 3.10–9.10s crop; expressive starts at 37.32s inside 37.10–46.50s).
+No clipping/sample-rate mismatch found in the new 24kHz mono samples. Preview gain
+changes neither sample count nor sample rate. This is not proof of a root cause.
+Eight steps is below upstream's 32-step default/16-step speed recommendation.
+
+New actual GPU generations, same text as the rejected sample and seed 42:
+conversational fp32 at 8/32 steps = 5.39/16.55s for 4.86/4.94s audio;
+expressive fp32 at 32 steps = 19.54s for 5.04s audio. Scripts already support these
+experiments; no runtime change was needed. Compare A and B:
+
+- A: data/voice-clone/quality-conversational-fp32/steps-32-listen.wav
+- B: data/voice-clone/quality-expressive-fp32/steps-32-listen.wav
+
+The two 32-step samples differ only in reference prompt (same sentence, seed,
+precision and generation settings). A matching eight-step fp32 baseline is saved
+to isolate step count when listening. Do not attribute improvement to precision or
+steps before listening. User has not judged A/B yet. Both passed local Whisper
+word checks, as did the baseline, and are unclipped. Details and exact user feedback
+are in ignored data/voice-clone/quality-review-2026-10-08.json. All audio stays local.
+
+Only docs and an insignificant v2.0.19 progress entry changed. New real generations
+are the relevant smoke evidence; runtime code is unchanged. All 623 tests passed
+in 9.37s and diff checks passed. Next is user A/B judgment;
+if both remain robotic, inspect reference/codec quality and alternate excerpts.
+Naturalness comes before further latency optimization. No accepted own-voice clone yet.

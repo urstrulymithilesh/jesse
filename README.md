@@ -92,8 +92,8 @@ you supply a measured gain/threshold pair or `--no-calibrate`.
 See **[training/README.md](training/README.md)** for local own-voice recording,
 training/export instructions, custom-model selection, and wake-word evaluation.
 For the optional local clone, see **[training/OMNIVOICE.md](training/OMNIVOICE.md)**.
-Launch with `Start-Jesse.cmd --omnivoice-profile data/voice-clone/runtime-conversational.json`
-after preparing the local profile. Omitting that option keeps the configured Piper voice.
+The eight-step audition was rejected as robotic; new quality comparisons await review.
+Omitting the optional voice profile keeps the configured Piper voice.
 
 ## Setup
 

@@ -8,7 +8,7 @@ milestones. This file tracks acceptance, not estimated percentages.
 |---|---|---|
 | Core conversation and memory | Unit suite and real-stack smoke pass | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
 | Custom wake phrase | Asset loading and WAV evaluation tooling; training recipe prepared | A trained `yo_jesse.onnx` meets sampled recall/false-activation gates and works with Mithilesh's real voice, including interruption and echo checks |
-| Own-voice clone | Local auditions and opt-in persistent GPU backend; headless reuse, interruption and recovery verified | User-approved likeness and acceptable latency in a normal headset conversation |
+| Own-voice clone | Persistent GPU backend works; user rejected eight-step sample as robotic; 32-step comparisons await review | User-approved likeness and acceptable latency in a normal headset conversation |
 | Phone calls | G.711 codec and existing transport seam | Echo-safe call transport, authenticated Media Streams/TwiML integration, public endpoint, and a real call using Mithilesh's account/number |
 | Release usability | Windows launcher and current instructions | Start reliably from a fresh terminal, diagnose missing assets, preserve memory across restart, document actual limitations |
 
@@ -24,6 +24,9 @@ the persistent backend is now available as an explicit launch option. User liken
 approval and live headset acceptance remain pending. In the first runtime check,
 warm generation took 4.66–6.14s, cold startup 55.21s, and the first reply after an
 interrupted generation took 21.51s including model reload. These are single samples.
+On 2026-10-08 Mithilesh rejected that eight-step voice as very robotic. It is not
+an accepted voice. Two full-precision, 32-step comparisons now test the original
+and expressive reference excerpts. Their naturalness still requires his judgment.
 
 Use Mithilesh's own voice, with American English, approximately age 21, and a
 charismatic, friendly delivery. He authorized cloning his own voice. The recordings
