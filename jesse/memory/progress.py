@@ -447,6 +447,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "them, and Ryan remains the default",
         False,
     ),
+    ProgressEntry(
+        "v2.0.20 — working on a more natural tone", "2026-10-08",
+        "Mithilesh found the expressive voice sample somewhat natural, but wants "
+        "Jesse to sound less robotic. That sample is the starting point now. "
+        "Two local auditions test a slightly slower pace and keeping the pauses "
+        "in his reference recording. Neither has his approval yet, and the "
+        "everyday voice has not changed",
+        False,
+    ),
 ]
 
 

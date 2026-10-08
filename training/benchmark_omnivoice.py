@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 import os
 import time
 from pathlib import Path
@@ -17,6 +18,9 @@ def main(argv=None):
                         default="cpu")
     parser.add_argument("--steps", type=int, nargs="+", default=[16, 32])
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--speed", type=float, help="Model duration factor (below 1 is slower)")
+    parser.add_argument("--keep-pauses", action="store_true",
+                        help="Disable generated-audio silence removal for a pacing comparison")
     parser.add_argument("--model", type=Path, default=ROOT / "data/omnivoice-model")
     parser.add_argument("--text", default="Hey, it's Jesse. Good to hear from you. "
                         "What are we working on today?")
@@ -27,6 +31,13 @@ def main(argv=None):
         parser.error("Step counts must be unique and text nonempty.")
     if not args.prompt.is_file() or not (args.model / "model.safetensors").is_file():
         parser.error("A saved local prompt and complete local model are required.")
+    generation_options = {}
+    if args.speed is not None:
+        if not math.isfinite(args.speed) or not 0.5 <= args.speed <= 2:
+            parser.error("Audition speed must be finite and between 0.5 and 2.")
+        generation_options["speed"] = args.speed
+    if args.keep_pauses:
+        generation_options["postprocess_output"] = False
     for key in ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE", "HF_HUB_DISABLE_TELEMETRY",
                 "DO_NOT_TRACK"):
         os.environ[key] = "1"
@@ -47,6 +58,7 @@ def main(argv=None):
         "mode": args.mode, "threads": args.threads, "torch": torch.__version__,
         "text": args.text, "prompt": str(args.prompt.resolve()), "runs": [],
         "tokenizer_device": "cpu", "user_approved_similarity": False,
+        "seed": 42, "generation_options": generation_options,
     }
 
     def save():
@@ -85,7 +97,8 @@ def main(argv=None):
                 print(f"Generating {steps} steps...", flush=True)
                 started = time.perf_counter()
                 audio = model.generate(text=args.text, language="en",
-                                       voice_clone_prompt=prompt, num_step=steps)[0]
+                                       voice_clone_prompt=prompt, num_step=steps,
+                                       **generation_options)[0]
                 if cuda:
                     torch.cuda.synchronize()
                 elapsed = time.perf_counter() - started

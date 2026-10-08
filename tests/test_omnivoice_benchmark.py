@@ -79,3 +79,29 @@ def test_existing_benchmark_is_not_overwritten(bench):
         main(argv + ["--steps", "16"])
     assert (output / "report.json").read_bytes() == original
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("flags,options", [
+    ([], {}),
+    (["--speed", "0.95", "--keep-pauses"],
+     {"speed": 0.95, "postprocess_output": False}),
+])
+def test_audition_records_effective_delivery_options_without_changing_defaults(bench, flags, options):
+    argv, output, calls = bench
+    assert main(argv + ["--steps", "16", *flags]) == 0
+    report = json.loads((output / "report.json").read_text())
+    assert report["seed"] == 42
+    assert report["generation_options"] == options
+    actual = {key: value for key, value in calls[0].items()
+              if key in ("speed", "postprocess_output")}
+    assert actual == options
+    assert report["user_approved_similarity"] is False
+
+
+@pytest.mark.parametrize("speed", ["nan", "inf", "0", "-1", "2.1"])
+def test_invalid_audition_speed_fails_before_model_load(bench, speed):
+    argv, output, calls = bench
+    with pytest.raises(SystemExit):
+        main(argv + ["--speed", speed])
+    assert calls == []
+    assert not output.exists()

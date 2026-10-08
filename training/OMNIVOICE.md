@@ -196,3 +196,50 @@ Do not change runtime defaults or claim a quality fix until the user judges them
 If both fail, diagnose the reference/codec and try another clean excerpt before
 spending effort on more speed tuning. No new recording or cloud upload is needed
 for this comparison.
+
+## Natural-tone work from B
+
+Mithilesh preferred the expressive 32-step B sample as somewhat natural, but wants
+to avoid the feeling of talking to a robot. Keep B as the quality baseline; this
+is not approval to ship it as the default voice.
+
+The audition tool now accepts --speed (finite 0.5–2, below 1 means slower) and
+--keep-pauses (disable output silence removal). Reports record the effective
+generation overrides and seed 42. Omitting both preserves the previous behavior.
+These are offline audition options; runtime settings have not changed.
+
+Two new 32-step CUDA fp32 samples use the same words and expressive recording:
+
+| Sample | Change | Generation | Audio |
+|---|---|---:|---:|
+| tone-relaxed-fp32 | Saved B prompt; speed 0.95; output pauses retained | 19.57s | 5.28s |
+| tone-original-pauses-fp32 | Re-encode B's full excerpt without reference silence removal; default speed; output pauses retained | 27.54s | 7.00s |
+
+Both live under data/voice-clone; listen to steps-32-listen.wav in each directory.
+Local Whisper recovered all intended words and both files are unclipped mono
+24kHz PCM. Those checks do not measure naturalness. The second variant changes
+the conditioning tokens and estimated duration; it does not copy a measured
+pause pattern exactly. Slower output is not automatically more natural.
+
+The untrimmed prompt is data/voice-clone/audition-expressive-untrimmed/voice-prompt.pt,
+created with create_voice_clone_prompt(..., preprocess_prompt=False), using the
+same expressive.wav and exact transcript. Its report records the reference hash.
+The original prompt is preserved. The full recording remains local.
+
+Example to reproduce the first variant into a new directory:
+
+~~~powershell
+data/omnivoice-gpu-env/Scripts/python.exe training/benchmark_omnivoice.py --prompt data/voice-clone/audition-expressive/voice-prompt.pt --output data/voice-clone/new-tone-audition --mode cuda-fp32 --steps 32 --speed 0.95 --keep-pauses --text "That sounds exciting. Tell me a little more about what you have in mind."
+~~~
+
+Important upstream limitation: this installed revision validates instruct against
+a fixed list of age/gender/pitch/accent/whisper tags. Freeform directions such as
+warm, relaxed, conversational are rejected; they are not supported emotion controls.
+An actual attempt failed before synthesis and its error report is retained under
+tone-warm-fp32. No freeform direction option was added. See the installed
+omnivoice/models/omnivoice.py::_resolve_instruct for the exact allowed vocabulary;
+do not bypass it or claim a natural-tone prompt works without a real generation.
+
+Next: compare the two auditions with B. If they remain stiff, a short spontaneous
+voice note in the user's desired speaking style is a useful new reference experiment.
+Do not promise that a longer script or additional steps alone will solve prosody.

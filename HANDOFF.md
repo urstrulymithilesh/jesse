@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-08 · 623 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-08 · 630 tests · 14/14 smoke (last runtime change) · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -1098,3 +1098,44 @@ are the relevant smoke evidence; runtime code is unchanged. All 623 tests passed
 in 9.37s and diff checks passed. Next is user A/B judgment;
 if both remain robotic, inspect reference/codec quality and alternate excerpts.
 Naturalness comes before further latency optimization. No accepted own-voice clone yet.
+
+## 29. B preferred; more natural tone still required — 2026-10-08
+
+User verdict: "B is somewhat natural. I don't want to feel like I'm talking to a
+robot. I want more natural tone". B = quality-expressive-fp32/steps-32-listen.wav.
+This selects the expressive reference as the starting point, not final voice
+acceptance. Natural delivery matters more than the earlier speed target.
+
+Actual discovery: the pinned OmniVoice _resolve_instruct accepts only fixed tags
+for age/gender/pitch/accent/whisper, not arbitrary prose directions. A warm/relaxed/
+conversational instruction was rejected before synthesis. Failure report retained
+under ignored tone-warm-fp32. Do not suggest that prompt as a working emotion control.
+The temporary CLI instruction option was removed before commit.
+
+training/benchmark_omnivoice.py now exposes supported --speed and --keep-pauses
+options, records overrides plus seed 42, and retains old behavior if omitted.
+No runtime backend setting changed. Slowing alone does not prove naturalness.
+
+New local real-model auditions, same words as B, CUDA fp32/32 steps/seed 42:
+
+- data/voice-clone/tone-relaxed-fp32/steps-32-listen.wav: B prompt, speed .95,
+  output silence removal disabled. Generation 19.57s, audio 5.28s.
+- data/voice-clone/tone-original-pauses-fp32/steps-32-listen.wav: same expressive.wav
+  encoded again with preprocess_prompt=False; default speed; output silence removal
+  disabled. Generation 27.54s, audio 7.00s. This retains reference pauses but also
+  changes the estimated duration, so do not claim exact source pacing transfer.
+
+Rebuilt prompt/report: data/voice-clone/audition-expressive-untrimmed. Original prompt
+preserved. Both outputs are unclipped 24kHz mono and local Whisper recovered all
+intended words. Report with exact preference: data/voice-clone/tone-review-2026-10-08.json.
+User must judge whether either sounds more natural than B; no such judgment yet.
+
+Validation: 630 tests passed in 10.33s, new options/defaults/provenance and invalid
+speed checks included; changed script/test lint passed. The actual generations
+above are this isolated audition-tool change's smoke evidence. Progress v2.0.20
+is insignificant. No cloud upload, paid compute, default voice switch, or new branch.
+
+Next: user's tone comparison. If both still feel stiff, use a short spontaneous
+recording in his desired everyday tone as another reference experiment, rather
+than promising longer scripts or more decoding steps will make it human-like.
+The remaining custom wake-word and phone-call milestones are unchanged.
