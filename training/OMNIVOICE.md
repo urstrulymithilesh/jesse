@@ -61,3 +61,53 @@ After the user chooses a candidate, measure multiple natural sentences, memory a
 timer responses, cancellation and restart behavior. OmniVoice is not wired into
 Jesse's real-time voice loop yet. Keep generated speech separate from microphone
 evaluation recordings and never use the audition to claim human wake-word recall.
+
+## GTX 1050 acceleration measured
+
+The existing GTX 1050 (4 GB, compute capability 6.1) and driver 512.78 passed a CUDA
+calculation and actual OmniVoice generation. No driver update was necessary.
+The separate **data/omnivoice-gpu-env/** uses Torch/torchaudio **2.7.1+cu118** and
+Transformers 5.3.0; its freeze is **data/voice-clone/environment-gpu.txt**.
+The CPU environment is still available.
+
+Run a benchmark with a saved prompt:
+
+~~~powershell
+data/omnivoice-gpu-env/Scripts/python.exe training/benchmark_omnivoice.py --prompt data/voice-clone/audition-conversational/voice-prompt.pt --output data/voice-clone/new-gpu-benchmark --mode cuda-fp16 --steps 8 16
+~~~
+
+The benchmark loads the model once and reuses the reference prompt. The language
+model, output head and embeddings run on GPU; the audio tokenizer stays on CPU.
+This keeps GPU memory lower. A requested CUDA run fails explicitly if unavailable;
+it never reports CPU timing as GPU timing. Reports preserve completed runs and
+record later errors. Each output directory must be new.
+
+Measured once per setting, four CPU threads, same saved conversational reference:
+
+| Mode | Steps | Generation seconds | Audio seconds | Peak allocated GPU MiB |
+|---|---:|---:|---:|---:|
+| CPU dynamic int8 | 16 | 56.40 | 4.96 | — |
+| CPU dynamic int8 | 32 | 159.55 | 4.46 | — |
+| CUDA float32 | 16 | 11.08 | 4.82 | 2537 |
+| CUDA float32 | 32 | 17.77 | 4.41 | 2537 |
+| CUDA float16 | 8 | 5.95 | 4.58 | 1286 |
+| CUDA float16 | 16 | 9.47 | 4.83 | 1286 |
+| CUDA float16 | 32 | 18.09 | 4.42 | 1286 |
+
+These timings exclude model loading and reference encoding. The original CPU
+32-step audition took 136.87s including reference encoding, so comparison with it
+is approximate. Dynamic int8 did not establish a consistent CPU improvement and
+is experimental. GPU allocations are PyTorch tensor memory, not total VRAM use.
+Cold model setup adds roughly 10 seconds; a live backend should keep it loaded.
+
+A second, unseen sentence on CUDA float16 took **3.95s / 5.27s / 9.12s** at
+**4 / 8 / 16** steps, producing about 4.9 seconds of audio. Local Whisper recovered
+all intended words in each. Four steps is a more aggressive quality experiment,
+not an accepted default. Eight steps is a candidate for user audition; 16 is the
+upstream faster-inference recommendation. The 32-step half-precision greeting's
+Whisper result also appended slash characters: retain that raw check rather than
+treating transcription as a complete quality measurement.
+
+Listen to **data/voice-clone/benchmark-cuda-fp16-heldout/steps-8-listen.wav** and
+compare against the 16-step version. Voice likeness, naturalness and live
+interruption remain unverified. No benchmark selects a production voice.

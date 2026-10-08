@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-07 · 607 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-08 · 610 tests · 14/14 smoke (last runtime change) · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -961,3 +961,48 @@ change's smoke verification; the core voice loop was not changed.
 Validation: 607 regression tests passed in 6.59s, including 11 reference/preview
 tests. Changed-file lint and diff checks passed. Audio, prompts, transcripts, model
 weights, environment files and source checkout remain ignored and uncommitted.
+
+## 26. OmniVoice GPU inference and speed experiments — 2026-10-07
+
+The GTX 1050 works with CUDA despite the older Ollama/Vulkan discovery problem.
+Actual nvidia-smi: 4 GB, compute capability 6.1, driver 512.78. A separate
+data/omnivoice-gpu-env (Python 3.13, Torch/torchaudio 2.7.1+cu118, Transformers
+5.3.0) passed a CUDA matrix operation and full OmniVoice synthesis. Source/model
+revisions remain those in §25. No driver/system setting was changed. Environment
+freeze: data/voice-clone/environment-gpu.txt. The CPU environment remains usable.
+
+training/benchmark_omnivoice.py accepts a saved local voice prompt, runs entirely
+offline, retains the model across its requested step-count tests, keeps the audio
+codec on CPU, and moves the diffusion model to CUDA float32/float16. An experimental
+CPU mode dynamically quantizes only the language model's linear layers. It does not
+modify model files, select a voice, or change Jesse's runtime. Existing result
+directories are refused; completed results survive a subsequent inference error.
+
+Measured timings (cached conversational prompt, short greeting, four threads):
+CPU int8 16/32 steps = 56.40/159.55s; GPU float32 16/32 = 11.08/17.77s;
+GPU float16 8/16/32 = 5.95/9.47/18.09s. GPU float16 peak allocated tensor memory
+was 1286 MiB, float32 2537 MiB. These are one-off measurements, exclude setup and
+reference encoding, and are not strictly equivalent to §25's 136.87s CPU timing.
+CPU quantization is not a demonstrated consistent win. Cold GPU setup adds ~10s.
+
+A second sentence (“That sounds exciting. Tell me a little more about what you
+have in mind.”) on GPU float16 took 3.95/5.27/9.12s at 4/8/16 steps for ~4.9s audio.
+All intended words were recovered by local Whisper. Eight steps is a candidate,
+four is an aggressive quality experiment; neither is likeness-approved. The
+32-step fp16 greeting's Whisper result included trailing slash characters despite
+recovering the words; do not claim every automated check was entirely clean.
+
+All outputs/reports/transcripts are ignored under data/voice-clone/benchmark-*.
+For a fresh audition use benchmark-cuda-fp16-heldout/steps-8-listen.wav and compare
+steps-16-listen.wav. Prior A/B choice remains unanswered; the conversational prompt
+was used for repeatable benchmarking, not treated as the chosen identity.
+
+**Next:** user likeness/quality judgment, then a persistent local TTS backend with
+bounded cancellation and real interruption tests. Keep the model warm rather than
+launching a fresh process per sentence. Do not call speech-generation timings
+end-to-end conversation latency. Wake training and phone milestones remain open.
+
+Validation: 610 tests passed in 13.11s, including three new failure-preservation,
+no-CUDA-fallback and no-overwrite tests. Lint passed. The real model generations
+above are the new smoke evidence; the core runtime voice loop was unchanged.
+Progress v2.0.17 is not significant because these are still offline auditions.

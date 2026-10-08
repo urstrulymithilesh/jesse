@@ -419,6 +419,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "voice has not switched from Ryan",
         False,
     ),
+    ProgressEntry(
+        "v2.0.17 — the voice clone can use the local GPU", "2026-10-07",
+        "the GTX 1050 now runs the OmniVoice audition model without a driver "
+        "change. A full thirty-two-step sample took about eighteen seconds, "
+        "and an eight-step sample took about six. The faster voice still needs "
+        "Mithilesh's judgment and a live playback backend. His everyday voice "
+        "has not changed",
+        False,
+    ),
 ]
 
 

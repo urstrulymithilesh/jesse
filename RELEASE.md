@@ -18,6 +18,9 @@ milestones. This file tracks acceptance, not estimated percentages.
 The current path is local zero-shot cloning and audition before integration;
 Piper fine-tuning is no longer the first voice experiment. A saved OmniVoice prompt
 requires the OmniVoice model and is not a Piper-compatible exported voice.
+Local GTX 1050 inference is now measured: roughly 5–6 seconds for a short
+eight-step audition, with the audio codec on CPU. This is an audition candidate;
+user likeness approval and persistent live-backend integration remain pending.
 
 Use Mithilesh's own voice, with American English, approximately age 21, and a
 charismatic, friendly delivery. He authorized cloning his own voice. The recordings
