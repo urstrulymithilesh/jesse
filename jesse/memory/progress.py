@@ -428,6 +428,16 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "has not changed",
         False,
     ),
+    ProgressEntry(
+        "v2.0.18 — his own-voice option can join the voice loop", "2026-10-08",
+        "Jesse can now use Mithilesh's local OmniVoice prompt through an optional "
+        "voice backend that stays loaded between replies. The real GPU check "
+        "produced two replies in about five to six seconds each and stopped an "
+        "unfinished generation without leaking audio. Restarting after that stop "
+        "took longer because the model had to reload. Mithilesh still needs to "
+        "judge the likeness and try it on his headset; Ryan remains the default",
+        True,
+    ),
 ]
 
 

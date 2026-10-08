@@ -79,9 +79,10 @@ Working end to end, on-device:
   confirmation when you're away.
 
 Full-vision completion is tracked in **[RELEASE.md](RELEASE.md)**. Custom `yo Jesse`
-training and cloning Mithilesh's own voice are active milestones; neither trained
-asset exists yet. Phone-number integration remains unfinished. The Tailscale path
-is built but paused. GPU acceleration remains deferred.
+training and cloning Mithilesh's own voice are active milestones. Local OmniVoice
+auditions and an optional GPU voice backend exist; likeness and live headset
+acceptance are pending. The custom wake model and phone-number integration remain
+unfinished. The Tailscale path is built but paused.
 
 On Windows, **double-click `Start-Jesse.cmd`** after setup, or run it from a terminal.
 It selects this project's Python, the real Ollama model, and the local text UI.
@@ -90,6 +91,9 @@ you supply a measured gain/threshold pair or `--no-calibrate`.
 
 See **[training/README.md](training/README.md)** for local own-voice recording,
 training/export instructions, custom-model selection, and wake-word evaluation.
+For the optional local clone, see **[training/OMNIVOICE.md](training/OMNIVOICE.md)**.
+Launch with `Start-Jesse.cmd --omnivoice-profile data/voice-clone/runtime-conversational.json`
+after preparing the local profile. Omitting that option keeps the configured Piper voice.
 
 ## Setup
 

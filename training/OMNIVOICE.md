@@ -110,4 +110,56 @@ treating transcription as a complete quality measurement.
 
 Listen to **data/voice-clone/benchmark-cuda-fp16-heldout/steps-8-listen.wav** and
 compare against the 16-step version. Voice likeness, naturalness and live
-interruption remain unverified. No benchmark selects a production voice.
+headset interruption remain unverified. No benchmark selects a production voice.
+
+## Optional live backend (2026-10-08)
+
+Jesse can run OmniVoice in a separate, persistent local Python process. It loads
+the model and saved prompt once, keeping the codec on CPU and the diffusion model
+on GPU. Jesse's existing Python environment needs no new dependencies. The worker
+uses offline model loading and has no HTTP listener. Piper stays the default.
+
+Create a private JSON profile in data/voice-clone/runtime-conversational.json:
+
+~~~json
+{
+  "python": "../omnivoice-gpu-env/Scripts/python.exe",
+  "model": "../omnivoice-model",
+  "prompt": "audition-conversational/voice-prompt.pt",
+  "mode": "cuda-fp16",
+  "steps": 8
+}
+~~~
+
+Paths are relative to the profile. The local candidate profile uses eight steps;
+omitting steps defaults to 16. Mode cpu is available explicitly but is much slower.
+Only use your own locally prepared prompt. A requested GPU backend fails clearly
+if unavailable; it does not silently substitute another voice or CPU inference.
+
+~~~powershell
+.venv/Scripts/python.exe -m jesse run --ollama --ui --omnivoice-profile data/voice-clone/runtime-conversational.json
+~~~
+
+The option also works through Start-Jesse.cmd. It cannot be combined with --voice.
+Model loading completes before microphone capture. Audio is generated one sentence
+at a time, then played in short PCM chunks; this is not token-level audio streaming.
+Constant peak gain matches the audible audition previews, without pitch shifting.
+
+Both desk and remote playback pull synthesis off the microphone event loop.
+An interruption during generation kills and reaps the worker and returns no stale
+audio; the next request starts a fresh worker. An interruption after generation
+stops chunk playback without unloading the model. Shutdown also reaps the worker.
+Requests time out after 180 seconds. Phone acoustic echo handling is still separate.
+
+Headless verification, without opening microphone or speakers:
+
+~~~powershell
+.venv/Scripts/python.exe -m training.smoke_omnivoice --profile data/voice-clone/runtime-conversational.json --output data/voice-clone/new-runtime-check
+~~~
+
+The first real check reused one worker for two replies (6.14s and 4.66s). A stop
+signal at 0.50s returned at 0.54s with no audio and the worker reaped. The next
+reply succeeded in 21.51s including reload. Cold startup took 55.21s in this run;
+earlier standalone benchmark setup was around 10s, so startup is variable.
+These single-run numbers are not a daily-use latency guarantee. This candidate
+still needs human likeness, naturalness, and live headset acceptance.

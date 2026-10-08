@@ -77,3 +77,30 @@ def test_live_muted_audio_still_reaches_detectors_with_gain_and_clipping(microph
             await capture.aclose()
 
     asyncio.run(scenario())
+
+
+def test_output_failure_closes_synthesis_iterator(monkeypatch):
+    closed = []
+    class BrokenOutput:
+        def __init__(self, **kwargs):
+            pass
+        def start(self):
+            pass
+        def stop(self):
+            pass
+        def close(self):
+            pass
+        def write(self, data):
+            raise OSError("output disconnected")
+    def frames():
+        try:
+            yield b"\x00\x00"
+            yield b"\x01\x01"
+        finally:
+            closed.append(True)
+    monkeypatch.setattr("jesse.audio.transport.sd.RawOutputStream", BrokenOutput)
+    async def scenario():
+        with pytest.raises(OSError, match="disconnected"):
+            await LocalAudioTransport().play(frames())
+        assert closed == [True]
+    asyncio.run(scenario())

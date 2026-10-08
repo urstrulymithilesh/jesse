@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import threading
 from collections import deque
 from datetime import datetime
 from collections.abc import Callable, Iterator
@@ -220,7 +221,7 @@ class Orchestrator:
         # Rolling recent audio so the wake-word's detection latency doesn't eat the
         # start of the sentence — prepended to the turn buffer when we start listening.
         self._preroll: deque[bytes] = deque(maxlen=preroll_frames)
-        self._interrupt = asyncio.Event()
+        self._interrupt = threading.Event()
         # Set when the stop-word cuts a reply short. He just said the wake word, so the
         # turn ends by LISTENING for what he actually wants rather than going idle and
         # making his say it twice.
@@ -253,6 +254,23 @@ class Orchestrator:
 
     async def run(self, *, max_frames: int | None = None) -> None:
         """Consume mic frames until the transport ends (or max_frames, for tests)."""
+        try:
+            start = getattr(self.synth, "start", None)
+            if start is not None:
+                print("  [voice] loading the local voice model...")
+                await asyncio.to_thread(start)
+            await self._run_session(max_frames=max_frames)
+        finally:
+            self._interrupt.set()
+            close = getattr(self.synth, "close", None)
+            if close is not None:
+                await asyncio.to_thread(close)
+            if self._turn_task is not None and not self._turn_task.done():
+                self._turn_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, Exception):
+                    await self._turn_task
+
+    async def _run_session(self, *, max_frames: int | None = None) -> None:
         n = 0
         # Catch up on any exchange whose extraction was cut short last time (you spoke
         # again, or quit, inside the extraction window). Backgrounded so it never
@@ -751,8 +769,8 @@ class Orchestrator:
                     if item is _GENERATION_DONE:
                         break
                     if held is not None:               # held is definitely not the last
-                        await self._speak_sentence(held)
-                        spoken.append(held)
+                        if await self._speak_sentence(held):
+                            spoken.append(held)
                         if self._interrupt.is_set():
                             held = None
                             break
@@ -763,8 +781,8 @@ class Orchestrator:
                     kept = trim_reflexive_question(
                         full, keep_rate=CONFIG.reasoning.question_keep_rate)
                     if kept.rstrip().endswith(held.strip()):
-                        await self._speak_sentence(held)
-                        spoken.append(held)
+                        if await self._speak_sentence(held):
+                            spoken.append(held)
                     else:
                         print("  [reply] trimmed a reflexive trailing question")
             finally:
@@ -775,11 +793,11 @@ class Orchestrator:
             raise failure                  # let _run_turn surface it and apologise
         return " ".join(spoken).strip()
 
-    async def _speak_sentence(self, text: str) -> None:
+    async def _speak_sentence(self, text: str) -> bool:
         """Play one sentence, entering SPEAKING on the first one only."""
         text = clean_for_speech(text)
         if not text:
-            return
+            return False
         if self.state is not ConversationState.SPEAKING:
             self._enter(ConversationState.SPEAKING)
             self.transport.mute_input()    # half-duplex holds for the whole reply
@@ -787,10 +805,7 @@ class Orchestrator:
         if self.text_channel is not None:
             self.text_channel.log("jesse", text)
             self.text_channel.set_speaking(True)
-        await self.transport.play(
-            self._interruptible(self.synth.synthesize(text)),
-            sample_rate=self.synth.sample_rate,
-        )
+        return await self._play_speech(text)
 
     def _finish_speaking(self) -> None:
         """Always run, interrupted or not: unmute, flush the echo tail, back to idle."""
@@ -1270,21 +1285,51 @@ class Orchestrator:
         self.transport.mute_input()
         print(f'  jesse: "{text}"')
         try:
-            await self.transport.play(
-                self._interruptible(self.synth.synthesize(text)),
-                sample_rate=self.synth.sample_rate,
-            )
+            await self._play_speech(text)
         finally:
             self.transport.unmute_input()  # flush self-echo tail
             self._enter(ConversationState.IDLE)
 
+    async def _play_speech(self, text: str) -> bool:
+        cancellable = getattr(self.synth, "synthesize_interruptible", None)
+        frames = (cancellable(text, self._interrupt) if cancellable is not None
+                  else self.synth.synthesize(text))
+        emitted = False
+
+        def audible_frames():
+            nonlocal emitted
+            stream = self._interruptible(frames)
+            try:
+                for chunk in stream:
+                    emitted = True
+                    yield chunk
+            finally:
+                stream.close()
+
+        playback = asyncio.create_task(self.transport.play(
+            audible_frames(), sample_rate=self.synth.sample_rate))
+        try:
+            await asyncio.shield(playback)
+        except asyncio.CancelledError:
+            # Signal the synchronous worker BEFORE waiting for its in-flight next.
+            self._interrupt.set()
+            with contextlib.suppress(Exception):
+                await playback
+            raise
+        return emitted
+
     def _interruptible(self, frames: Iterator[bytes]) -> Iterator[bytes]:
         """Wrap the synth stream so a stop-word (which sets _interrupt from the
         ingest loop) cuts playback at the next frame boundary."""
-        for chunk in frames:
-            if self._interrupt.is_set():
-                return
-            yield chunk
+        try:
+            for chunk in frames:
+                if self._interrupt.is_set():
+                    return
+                yield chunk
+        finally:
+            close = getattr(frames, "close", None)
+            if close is not None:
+                close()
 
     async def _announce_alert(self, text: str) -> None:
         """Keep reminders visible and contain audio failures at both delivery sites."""

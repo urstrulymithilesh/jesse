@@ -18,7 +18,7 @@ def _print_state(state: ConversationState) -> None:
 def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = None,
                        text_channel=None, wake_model: str | None = None,
                        wake_phrase: str | None = None, wake_threshold: float = 0.5,
-                       voice: str | None = None):
+                       voice: str | None = None, omnivoice_profile: str | None = None):
     """Returns (orchestrator, voice_label, brain_label). input_device overrides
     CONFIG.audio.input_device (from `run --device N`)."""
     from jesse.audio.transport import LocalAudioTransport
@@ -48,9 +48,15 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
     )
     transcriber = WhisperTranscriber()
 
+    if voice is not None and omnivoice_profile is not None:
+        raise ValueError("Choose a Piper voice or an OmniVoice profile, not both")
     if voice is not None and not PiperSynthesizer.is_available(voice):
         raise ValueError(f"Requested Piper voice {voice!r} is unavailable")
-    if PiperSynthesizer.is_available(voice):
+    if omnivoice_profile is not None:
+        from jesse.tts.omnivoice import OmniVoiceSynthesizer
+        synthesizer = OmniVoiceSynthesizer(omnivoice_profile)
+        voice_label = f"OmniVoice (local clone, {synthesizer.steps} steps; experimental)"
+    elif PiperSynthesizer.is_available(voice):
         synthesizer = PiperSynthesizer(voice=voice)
         if voice is not None:
             _ = synthesizer.sample_rate  # validate custom export/config before startup
@@ -78,10 +84,10 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
             CONFIG.memory.db_path, FastEmbedEmbedder(),
             log_path=CONFIG.memory.db_path.parent / "memory-log.txt",
         )
-        from jesse.schedule.scheduler import Scheduler
-        from jesse.schedule.store import SqliteScheduleStore
         from jesse.memory.episodes import EpisodeStore, Summariser
         from jesse.memory.seed import seed_if_needed
+        from jesse.schedule.scheduler import Scheduler
+        from jesse.schedule.store import SqliteScheduleStore
         n = seed_if_needed(store)      # first run: plant core + self facts
         if n:
             print(f"  [memory] seeded {n} core/self facts (first run)")

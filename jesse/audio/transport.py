@@ -13,12 +13,14 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator, Iterator
+from contextlib import aclosing
 
 import numpy as np
 import sounddevice as sd
 
 from jesse.audio.devices import DeviceError, format_device_table, validate_input_device
 from jesse.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
+from jesse.audio.iteration import audio_chunks
 
 
 class LocalAudioTransport:
@@ -39,7 +41,7 @@ class LocalAudioTransport:
         # Fail fast + clearly if the index is missing or output-only.
         validate_input_device(self._input_device)
 
-        def _cb(indata, frames, time_info, status) -> None:  # noqa: ANN001 - sd callback
+        def _cb(indata, frames, time_info, status) -> None:
             # Runs on PortAudio's thread; hand the frame to the asyncio loop.
             epoch = self._capture_epoch
             pcm = bytes(indata)
@@ -88,8 +90,9 @@ class LocalAudioTransport:
         )
         stream.start()
         try:
-            for chunk in frames:
-                await asyncio.to_thread(stream.write, chunk)
+            async with aclosing(audio_chunks(frames)) as chunks:
+                async for chunk in chunks:
+                    await asyncio.to_thread(stream.write, chunk)
         finally:
             stream.stop()
             stream.close()
@@ -112,7 +115,7 @@ class LocalAudioTransport:
         return self._muted
 
 
-def to_int16_bytes(samples: "np.ndarray") -> bytes:
+def to_int16_bytes(samples: np.ndarray) -> bytes:
     """Helper for synthesizers: float [-1,1] or int16 array -> PCM bytes."""
     if samples.dtype != np.int16:
         samples = np.clip(samples, -1.0, 1.0)

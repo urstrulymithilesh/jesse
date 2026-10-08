@@ -9,7 +9,8 @@ from jesse.config import MODELS_DIR
 
 def run_asset_options(argv: list[str]) -> dict:
     values = {}
-    for flag in ("--wake-model", "--wake-phrase", "--wake-threshold", "--voice"):
+    for flag in ("--wake-model", "--wake-phrase", "--wake-threshold", "--voice",
+                 "--omnivoice-profile"):
         if flag not in argv:
             continue
         i = argv.index(flag)
@@ -19,6 +20,13 @@ def run_asset_options(argv: list[str]) -> dict:
     if not values:
         return {}
     out = {}
+    if "--omnivoice-profile" in values:
+        if "--voice" in values:
+            raise ValueError("Choose either --voice or --omnivoice-profile")
+        path = Path(values["--omnivoice-profile"]).resolve()
+        if not values["--omnivoice-profile"] or not path.is_file():
+            raise ValueError(f"OmniVoice profile does not exist: {path}")
+        out["omnivoice_profile"] = str(path)
     if "--wake-model" in values or "--wake-phrase" in values:
         if not values.get("--wake-model") or not values.get("--wake-phrase"):
             raise ValueError("Use --wake-model FILE.onnx together with --wake-phrase 'yo Jesse'")

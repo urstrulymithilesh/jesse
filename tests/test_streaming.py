@@ -180,9 +180,10 @@ def test_interrupt_mid_reply_keeps_what_was_already_said():
     original = orch._speak_sentence
 
     async def speak_then_interrupt(text):
-        await original(text)
+        emitted = await original(text)
         if len(transport.spoken) == 2:
             orch._interrupt.set()      # he cuts in after the second sentence
+        return emitted
     orch._speak_sentence = speak_then_interrupt
 
     said = asyncio.run(orch._think_and_speak([]))

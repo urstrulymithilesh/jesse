@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-08 · 610 tests · 14/14 smoke (last runtime change) · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-08 · 623 tests · 14/14 smoke · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -1006,3 +1006,60 @@ Validation: 610 tests passed in 13.11s, including three new failure-preservation
 no-CUDA-fallback and no-overwrite tests. Lint passed. The real model generations
 above are the new smoke evidence; the core runtime voice loop was unchanged.
 Progress v2.0.17 is not significant because these are still offline auditions.
+
+## 27. Optional persistent OmniVoice runtime — 2026-10-08
+
+The GPU benchmark milestone was committed/pushed as 358ff57. There is now an
+explicit live backend option, --omnivoice-profile FILE.json. The local candidate
+profile is data/voice-clone/runtime-conversational.json: eight steps, CUDA fp16,
+the conversational prompt from §25. This is an experiment, not a user-approved
+voice selection. Default Piper/Ryan is unchanged. Do not upload the private
+profile, prompt, audio or transcripts. See training/OMNIVOICE.md for setup/launch.
+
+jesse/tts/omnivoice.py launches a persistent JSON-lines worker in the separate
+GPU environment, using local model/prompt paths and offline flags. No service
+port and no torch dependency added to Jesse's main environment. The worker keeps
+the diffusion model on GPU and codec on CPU, returns mono 24kHz PCM with constant
+peak gain (same audible level as previews). A sentence finishes generating before
+chunk playback starts; this is not low-latency token-level audio streaming.
+
+Both desk and remote transports now pull synchronous audio iterators in a worker
+thread. Previously the next() call could block microphone ingestion during TTS.
+The orchestrator supplies a thread-safe interruption event to the optional backend.
+Stopping during generation kills/reaps the process, discards its unfinished audio,
+and allows a fresh worker next turn. Stopping after generation keeps the warm
+worker and ends chunk playback. Session shutdown/capture failure closes the worker.
+Timeout is 180s; CUDA/model errors are explicit rather than silently choosing CPU
+or a different voice. Unheard sentences interrupted before first audio are excluded
+from the returned spoken reply/history. Existing partial-sentence accounting still
+records the whole sentence once audio starts; word-level playback tracking is not new.
+
+Real local worker smoke (training/smoke_omnivoice.py), no microphone or speakers:
+
+- Same worker reused for two replies: 6.14s/2.88s audio and 4.66s/5.23s audio.
+- Stop at 0.50s returned at 0.54s with no PCM and the worker reaped.
+- A subsequent reply succeeded in 21.51s including model reload, 3.26s audio.
+- Cold startup was 55.21s in this run (earlier benchmark setup ~10s). It varies.
+- Worker closed at the end; local Whisper recovered all intended words from the
+  three generated WAVs. Similarity/naturalness have NOT been judged by the user.
+
+Evidence: ignored data/voice-clone/runtime-smoke-2026-10-08/{report.json,
+word-checks.json,first.wav,second.wav,after-interruption.wav}. Listen to second.wav
+for a warm-worker sample. These timings are synthesis only, not LLM-to-audio latency.
+Killing the model makes interruption responsive but the next reply slower. Do not
+claim this is already comfortable for daily conversation.
+
+Validation: 623 tests passed in 9.02s. New real-subprocess tests cover reuse,
+crash/error/timeout recovery, cancellation before audio, local/remote loop
+responsiveness, shutdown cleanup, and output-device failure closing its generator.
+Full real-stack smoke passed 14/14 in 253s (+12s warmup), including birthday-plan
+recall and barge-in. Final barge-in passed again in 10s (+7s warmup) after the
+unheard-history adjustment.
+New-module and supporting-file lint passed; older orchestrator/main lint debt is
+unchanged. Progress v2.0.18 is significant because the clone can join the live loop.
+
+Next: user likeness judgment and a timed live headset conversation with the opt-in
+profile. Consider retaining the model through cancellation to reduce the 21.5s
+recovery pause. Custom yo Jesse training is still only a prepared free-Colab
+notebook, and phone-number integration remains unfinished. No paid compute or
+cloud upload of voice recordings has been authorized.

@@ -111,8 +111,12 @@ class Transcriber(Protocol):
 
 @runtime_checkable
 class Synthesizer(Protocol):
-    """Text in, audio frames out — STREAMING, so playback can start before the
-    whole reply is synthesized. v1 impl: Piper (piper-tts) on CPU."""
+    """Text in, PCM chunks out. Piper streams; OmniVoice generates per sentence.
+
+    Optional lifecycle hooks start()/close() warm and release a worker. An optional
+    synthesize_interruptible(text, threading.Event) lets a slow backend stop before
+    its first chunk. Playback pulls iterators off the microphone event loop.
+    """
 
     @property
     def sample_rate(self) -> int:

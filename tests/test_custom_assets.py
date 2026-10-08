@@ -28,8 +28,8 @@ def test_asset_names_are_independent_of_spoken_phrase_and_require_voice_config(t
     with pytest.raises(ValueError, match="onnx.json"):
         run_asset_options(args)
     voice.with_suffix(".onnx.json").write_text("{}")
-    assert run_asset_options(args) == dict(wake_model=str(model.resolve()),
-        wake_phrase="yo Jesse", wake_threshold=0.7, voice="en_US-jesse-medium")
+    assert run_asset_options(args) == {"wake_model": str(model.resolve()),
+        "wake_phrase": "yo Jesse", "wake_threshold": 0.7, "voice": "en_US-jesse-medium"}
     assert run_asset_options([]) == {}
 
 
@@ -69,3 +69,29 @@ def test_invalid_export_fails_cleanly_and_releases_instance(monkeypatch, capsys)
     assert _run([]) == 1
     assert len(released) == 1
     assert "invalid ONNX export" in capsys.readouterr().out
+
+
+def test_omnivoice_is_explicit_and_conflicts_with_piper(tmp_path):
+    profile = tmp_path / "voice.json"
+    profile.write_text("{}")
+    assert run_asset_options(["--omnivoice-profile", str(profile)]) == {
+        "omnivoice_profile": str(profile.resolve())}
+    with pytest.raises(ValueError, match="either"):
+        run_asset_options(["--omnivoice-profile", str(profile), "--voice", "ryan"])
+    with pytest.raises(ValueError, match="does not exist"):
+        run_asset_options(["--omnivoice-profile", str(tmp_path / "missing.json")])
+
+
+def test_factory_selects_clone_without_starting_a_worker(monkeypatch):
+    from jesse.factory import build_orchestrator
+    selected = []
+    def clone(profile):
+        selected.append(profile)
+        return SimpleNamespace(steps=8)
+    monkeypatch.setattr("jesse.tts.omnivoice.OmniVoiceSynthesizer", clone)
+    monkeypatch.setattr("jesse.tts.piper.PiperSynthesizer.is_available",
+                        lambda *args: pytest.fail("Piper should not be selected"))
+    orch, label, _ = build_orchestrator(omnivoice_profile="candidate.json")
+    assert selected == ["candidate.json"]
+    assert orch.synth.steps == 8
+    assert "OmniVoice" in label

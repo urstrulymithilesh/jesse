@@ -25,6 +25,7 @@ import time
 from collections.abc import AsyncIterator, Iterator
 
 from jesse.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
+from jesse.audio.iteration import audio_chunks
 
 SILENCE = b"\x00" * (CHUNK_SAMPLES * 2)
 
@@ -162,7 +163,7 @@ class SwitchingTransport:
     async def play(self, frames: Iterator[bytes], *, sample_rate: int = SAMPLE_RATE) -> None:
         """To the phone while it has the floor, otherwise to the desk speakers."""
         if self._remote_live:
-            pcm = b"".join(frames)
+            pcm = b"".join([chunk async for chunk in audio_chunks(frames)])
             if pcm:
                 self.remote.queue_reply(pcm, sample_rate)
             return

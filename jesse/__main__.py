@@ -32,6 +32,7 @@ def _status() -> int:
     print("           python spike.py        (prove the hardware)")
     print("           python -m jesse voice-record --device N  (record your own voice dataset)")
     print("           python -m jesse wake-check --help  (evaluate a trained wake model)")
+    print("           python -m jesse run --omnivoice-profile FILE.json  (optional local clone)")
     return 0
 
 
@@ -567,6 +568,9 @@ def _run(argv: list[str]) -> int:
         print("\nGoodbye.")
     except DeviceError as e:
         print(f"\nAudio device problem:\n{e}")
+        return 1
+    except RuntimeError as e:
+        print(f"\nCould not run Jesse: {e}")
         return 1
     finally:
         release(pid_file)
