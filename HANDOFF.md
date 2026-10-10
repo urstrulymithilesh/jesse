@@ -1139,3 +1139,40 @@ Next: user's tone comparison. If both still feel stiff, use a short spontaneous
 recording in his desired everyday tone as another reference experiment, rather
 than promising longer scripts or more decoding steps will make it human-like.
 The remaining custom wake-word and phone-call milestones are unchanged.
+
+## 30. Take 2's tone accepted; static cleanup audition — 2026-10-08
+
+User: "2 is good. but im hearing a static in the background". This refers to
+tone-original-pauses-fp32/steps-32-listen.wav, NOT B or the original eight-step
+runtime candidate. Keep its natural delivery: untrimmed expressive reference,
+CUDA fp32, 32 steps, default speed, output silence removal disabled. Tone is liked;
+clean sound, runtime parity, latency and live headset acceptance remain open.
+
+Quiet sections of the saved raw WAV measure about -80 dBFS, and the 23.08x audition
+gain raises them to about -54 dBFS. Existing noise is being amplified along with
+speech. Do not claim the gain created noise or that the microphone/codec is proven
+to be its origin. No clipping/sample-rate fault was found.
+
+Made a cleaned copy of the exact take, with no new generation. Present:
+data/voice-clone/tone-original-pauses-fp32/steps-32-clean-profiled.wav.
+FFmpeg afftdn learns a noise profile from this file's known quiet 0.2–1.2s, reduces
+noise by 12 dB with gain smoothing, and compensates its 600-sample (25ms) delay with
+padding/trimming. Full command in training/OMNIVOICE.md. Original is preserved.
+
+Actual results: 3–4s pause RMS -53.78 -> -65.72 dBFS (11.94 dB reduction);
+4.5–6.5s speech RMS -18.40 -> -18.57 dBFS (0.17 dB change). Output remains 7.00s,
+24kHz mono, unclipped; cross-correlation lag zero and local Whisper exact words.
+Report: steps-32-clean-profiled-report.json in that folder. User has not judged the
+cleanup yet. Generic first attempt steps-32-clean.wav only reduced noise 0.92 dB;
+retained for diagnosis, not the presented candidate.
+
+This is a sample-specific offline cleanup. Never assume future utterances have a
+noise-only interval at 0.2–1.2s. If accepted, implement a general cleanup strategy
+and wire the preferred reference/precision/step/pause settings into the runtime;
+the existing optional runtime does not yet reproduce this audition. Keep latency
+and GPU memory in view: this preferred raw generation took 27.54s for 7s audio.
+
+Only docs and insignificant progress v2.0.21 changed. Real audio processing,
+alignment/noise checks and local ASR are the smoke evidence for this turn. All
+recordings/processed WAVs/reports remain ignored and local. No default voice change.
+Validation: all 630 tests passed in 9.50s; diff checks passed.

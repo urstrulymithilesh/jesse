@@ -93,7 +93,8 @@ See **[training/README.md](training/README.md)** for local own-voice recording,
 training/export instructions, custom-model selection, and wake-word evaluation.
 For the optional local clone, see **[training/OMNIVOICE.md](training/OMNIVOICE.md)**.
 The eight-step audition was rejected as robotic. The expressive 32-step reference
-is preferred but still needs a more natural tone; pacing comparisons are under review.
+led to a preferred take with original reference pauses. The user likes its tone;
+a noise-reduced copy is now awaiting listening review.
 Omitting the optional voice profile keeps the configured Piper voice.
 
 ## Setup

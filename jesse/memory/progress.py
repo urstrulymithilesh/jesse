@@ -456,6 +456,15 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "everyday voice has not changed",
         False,
     ),
+    ProgressEntry(
+        "v2.0.21 — keeping the good tone and reducing the hiss", "2026-10-08",
+        "Mithilesh liked the second voice's tone but heard background static. "
+        "A cleaned copy keeps that exact take and its pauses while lowering "
+        "measured pause noise by about twelve decibels. He still needs to hear "
+        "whether the cleanup sounds right. This is an audition, and the live "
+        "voice settings have not changed",
+        False,
+    ),
 ]
 
 

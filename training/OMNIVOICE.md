@@ -243,3 +243,43 @@ do not bypass it or claim a natural-tone prompt works without a real generation.
 Next: compare the two auditions with B. If they remain stiff, a short spontaneous
 voice note in the user's desired speaking style is a useful new reference experiment.
 Do not promise that a longer script or additional steps alone will solve prosody.
+
+## Preferred tone and static cleanup
+
+The user chose take 2: tone-original-pauses-fp32/steps-32-listen.wav, saying
+it is good but has background static. Preserve that take's tone and pacing.
+Its reference is the untrimmed expressive prompt; CUDA fp32, 32 steps, default
+speed, output silence removal disabled. The old eight-step runtime profile does
+not reproduce the preferred voice and must not be described as equivalent.
+
+There is measurable noise in the saved file's quiet sections. The generated raw
+file is near -80 dBFS there; the audition's 23.08x gain raises it to around -54 dBFS.
+Gain amplifies existing noise along with speech; this does not prove whether the
+noise originated in the reference recording or the model/codec. No clipping or
+sample-rate error was found.
+
+An offline cleanup now preserves the exact generated take:
+data/voice-clone/tone-original-pauses-fp32/steps-32-clean-profiled.wav.
+It uses FFmpeg afftdn with 12 dB reduction, a noise profile sampled from the known
+quiet 0.2–1.2s interval, and gain smoothing. Padding/trimming compensates the measured
+600-sample filter delay. No speech regeneration, time stretching, silence removal,
+or additional gain was applied. The original remains available.
+
+Reproduce to a new file (FFmpeg -n refuses overwriting):
+
+~~~powershell
+ffmpeg -hide_banner -loglevel error -n -i data/voice-clone/tone-original-pauses-fp32/steps-32-listen.wav -af "apad=pad_len=600,asendcmd=c='0.2 afftdn sn start;1.2 afftdn sn stop',afftdn=nr=12:nf=-40:gs=8,atrim=start_sample=600" -c:a pcm_s16le data/voice-clone/tone-original-pauses-fp32/new-cleaned.wav
+~~~
+
+Measured on the 3–4s quiet interval: -53.78 to -65.72 dBFS (11.94 dB reduction).
+Speech at 4.5–6.5s changed from -18.40 to -18.57 dBFS (0.17 dB quieter). Duration
+remains 7.00s, sample rate 24kHz mono, cross-correlation lag is zero, and output
+does not clip. Local Whisper recovered every intended word. These measurements
+do not replace the user's judgment of hiss or processing artifacts.
+
+The profile interval belongs to this take only: do not hardcode it into runtime
+cleanup, where that interval could contain speech. The first generic filter attempt
+only reduced pause noise by 0.92 dB and is retained as steps-32-clean.wav; it is
+not the candidate to present. Detailed source hashes, settings and measurements
+are in steps-32-clean-profiled-report.json. No runtime filter is enabled yet.
+FFmpeg reference: https://ffmpeg.org/ffmpeg-filters.html#afftdn
