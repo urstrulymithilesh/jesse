@@ -12,8 +12,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True)
     parser.add_argument("--prompt", required=True)
-    parser.add_argument("--mode", choices=("cuda-fp16", "cpu"), required=True)
+    parser.add_argument("--mode", choices=("cuda-fp16", "cuda-fp32", "cpu"), required=True)
     parser.add_argument("--steps", type=int, required=True)
+    parser.add_argument("--keep-pauses", action="store_true")
+    parser.add_argument("--seed", type=int)
     args = parser.parse_args()
     output = sys.stdout
 
@@ -32,22 +34,26 @@ def main():
             from omnivoice import OmniVoice, VoiceClonePrompt
 
             torch.set_num_threads(4)
-            if args.mode == "cuda-fp16" and not torch.cuda.is_available():
+            if args.mode.startswith("cuda") and not torch.cuda.is_available():
                 raise RuntimeError("CUDA unavailable; no automatic CPU fallback")
             model = OmniVoice.from_pretrained(args.model, device_map="cpu",
                 dtype=torch.float32, local_files_only=True, load_asr=False)
-            if args.mode == "cuda-fp16":
+            if args.mode.startswith("cuda"):
                 tokenizer = model.audio_tokenizer
                 model.audio_tokenizer = None
-                model.to(device="cuda", dtype=torch.float16)
+                model.to(device="cuda", dtype=torch.float16 if args.mode == "cuda-fp16"
+                         else torch.float32)
                 model.audio_tokenizer = tokenizer
             prompt = VoiceClonePrompt.load(args.prompt)
         send({"ready": True, "sample_rate": model.sampling_rate})
         for line in sys.stdin:
             request = json.loads(line)
             with contextlib.redirect_stdout(sys.stderr), torch.inference_mode():
+                if args.seed is not None:
+                    torch.manual_seed(args.seed)
                 audio = np.asarray(model.generate(text=request["text"], language="en",
-                    voice_clone_prompt=prompt, num_step=args.steps)[0], dtype=np.float32)
+                    voice_clone_prompt=prompt, num_step=args.steps,
+                    postprocess_output=not args.keep_pauses)[0], dtype=np.float32)
                 if audio.size == 0 or not np.isfinite(audio).all():
                     raise ValueError("Voice generation returned empty or nonfinite audio")
                 peak = float(np.max(np.abs(audio)))

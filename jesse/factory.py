@@ -7,8 +7,11 @@ of coding to the contracts in jesse/core/interfaces.py.
 
 from __future__ import annotations
 
+from jesse.config import DATA_DIR
 from jesse.core.state import ConversationState
 from jesse.persona import SYSTEM_PROMPT
+
+DEFAULT_VOICE_PROFILE = DATA_DIR / "voice-clone/default.json"
 
 
 def _print_state(state: ConversationState) -> None:
@@ -31,6 +34,8 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
     from jesse.tts.piper import PiperSynthesizer
     from jesse.tts.stub import StubSynthesizer
 
+    if voice is None and omnivoice_profile is None and DEFAULT_VOICE_PROFILE.is_file():
+        omnivoice_profile = str(DEFAULT_VOICE_PROFILE)
     in_dev = input_device if input_device is not None else CONFIG.audio.input_device
     transport = LocalAudioTransport(
         input_device=in_dev, output_device=CONFIG.audio.output_device,
@@ -55,7 +60,7 @@ def build_orchestrator(*, use_ollama: bool = False, input_device: int | None = N
     if omnivoice_profile is not None:
         from jesse.tts.omnivoice import OmniVoiceSynthesizer
         synthesizer = OmniVoiceSynthesizer(omnivoice_profile)
-        voice_label = f"OmniVoice (local clone, {synthesizer.steps} steps; experimental)"
+        voice_label = f"OmniVoice (local clone, {synthesizer.steps} steps)"
     elif PiperSynthesizer.is_available(voice):
         synthesizer = PiperSynthesizer(voice=voice)
         if voice is not None:

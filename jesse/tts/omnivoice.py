@@ -6,6 +6,7 @@ import base64
 import json
 import os
 import queue
+import shutil
 import subprocess
 import threading
 import time
@@ -37,8 +38,25 @@ class OmniVoiceSynthesizer:
         if type(self.steps) is not int or not 1 <= self.steps <= 64:
             raise ValueError("OmniVoice steps must be an integer between 1 and 64")
         self.mode = config.get("mode", "cuda-fp16")
-        if self.mode not in ("cuda-fp16", "cpu"):
-            raise ValueError("OmniVoice mode must be cuda-fp16 or cpu")
+        if self.mode not in ("cuda-fp16", "cuda-fp32", "cpu"):
+            raise ValueError("OmniVoice mode must be cuda-fp16, cuda-fp32 or cpu")
+        self.keep_pauses = config.get("keep_pauses", False)
+        if type(self.keep_pauses) is not bool:
+            raise ValueError("OmniVoice keep_pauses must be a boolean")
+        self.seed = config.get("seed")
+        if self.seed is not None and (type(self.seed) is not int or not 0 <= self.seed < 2**32):
+            raise ValueError("OmniVoice seed must be an integer between 0 and 4294967295")
+        self.noise = None
+        self.ffmpeg = None
+        if "noise_reference" in config:
+            from jesse.tts.cleanup import load_noise_reference
+            value = config["noise_reference"]
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError("OmniVoice noise_reference must name a local WAV")
+            self.noise = load_noise_reference((profile.parent / value).resolve())
+            self.ffmpeg = shutil.which("ffmpeg")
+            if self.ffmpeg is None:
+                raise ValueError("This voice requires FFmpeg for its approved noise cleanup")
         self.timeout = 180.0
         self._lock = threading.Lock()
         self._lifecycle = threading.Lock()
@@ -94,6 +112,10 @@ class OmniVoiceSynthesizer:
             command = [str(self.paths["python"]), "-u", "-m", "jesse.tts.omnivoice_worker",
                        "--model", str(self.paths["model"]), "--prompt", str(self.paths["prompt"]),
                        "--mode", self.mode, "--steps", str(self.steps)]
+            if self.keep_pauses:
+                command.append("--keep-pauses")
+            if self.seed is not None:
+                command.extend(["--seed", str(self.seed)])
             self._process = proc = subprocess.Popen(
                 command, cwd=ROOT, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL, text=True, encoding="utf-8",
@@ -141,6 +163,10 @@ class OmniVoiceSynthesizer:
                 pcm = base64.b64decode(reply["pcm"], validate=True)
                 if not pcm or len(pcm) % 2:
                     raise ValueError("Invalid PCM from OmniVoice")
+                if self.noise is not None:
+                    from jesse.tts.cleanup import clean_pcm
+                    pcm = clean_pcm(pcm, self.noise, self.ffmpeg,
+                                    cancelled=lambda: self._closed or interrupt.is_set())
                 for offset in range(0, len(pcm), 4096):
                     if interrupt.is_set() or self._closed:
                         return

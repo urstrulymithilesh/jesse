@@ -21,7 +21,8 @@ def voice(tmp_path, monkeypatch):
     prompt.touch()
     profile = tmp_path / "voice.json"
     profile.write_text(json.dumps({"python": sys.executable, "model": "model",
-                                   "prompt": "prompt.pt", "steps": 8}))
+                                   "prompt": "prompt.pt", "steps": 32, "mode": "cuda-fp32",
+                                   "keep_pauses": True, "seed": 42}))
     worker = tmp_path / "worker.py"
     worker.write_text('''import base64, json, sys, time
 print(json.dumps({"ready": True, "sample_rate": 24000}), flush=True)
@@ -40,6 +41,10 @@ for line in sys.stdin:
     def launch(command, **kwargs):
         assert kwargs["env"]["HF_HUB_OFFLINE"] == "1"
         assert "jesse.tts.omnivoice_worker" in command
+        assert command[command.index("--mode") + 1] == "cuda-fp32"
+        assert command[command.index("--steps") + 1] == "32"
+        assert "--keep-pauses" in command
+        assert command[command.index("--seed") + 1] == "42"
         return popen([sys.executable, "-u", str(worker)], **kwargs)
     monkeypatch.setattr("jesse.tts.omnivoice.subprocess.Popen", launch)
     synth = OmniVoiceSynthesizer(profile)

@@ -95,3 +95,32 @@ def test_factory_selects_clone_without_starting_a_worker(monkeypatch):
     assert selected == ["candidate.json"]
     assert orch.synth.steps == 8
     assert "OmniVoice" in label
+
+
+def test_local_default_profile_is_used_but_explicit_piper_wins(tmp_path, monkeypatch):
+    from jesse.factory import build_orchestrator
+    profile = tmp_path / "default.json"
+    profile.write_text("{}")
+    monkeypatch.setattr("jesse.factory.DEFAULT_VOICE_PROFILE", profile)
+    chosen = []
+    def clone(path):
+        chosen.append(path)
+        return SimpleNamespace(steps=32)
+    monkeypatch.setattr("jesse.tts.omnivoice.OmniVoiceSynthesizer", clone)
+    monkeypatch.setattr("jesse.tts.piper.PiperSynthesizer.is_available", lambda *args: True)
+    monkeypatch.setattr("jesse.tts.piper.PiperSynthesizer.sample_rate", property(lambda _: 22050))
+    _, label, _ = build_orchestrator()
+    assert "OmniVoice" in label and chosen == [str(profile)]
+    _, label, _ = build_orchestrator(voice="en_US-ryan-high")
+    assert "Piper" in label and len(chosen) == 1
+
+
+def test_broken_local_default_never_silently_switches_to_piper(tmp_path, monkeypatch):
+    from jesse.factory import build_orchestrator
+    profile = tmp_path / "default.json"
+    profile.write_text("{}")
+    monkeypatch.setattr("jesse.factory.DEFAULT_VOICE_PROFILE", profile)
+    monkeypatch.setattr("jesse.tts.piper.PiperSynthesizer.is_available",
+                        lambda *args: pytest.fail("Selected clone must fail clearly"))
+    with pytest.raises(ValueError, match="requires python"):
+        build_orchestrator()

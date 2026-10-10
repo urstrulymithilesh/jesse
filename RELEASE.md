@@ -6,39 +6,35 @@ milestones. This file tracks acceptance, not estimated percentages.
 
 | Milestone | Current evidence | Done when |
 |---|---|---|
-| Core conversation and memory | Unit suite and real-stack smoke pass | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
+| Core conversation and memory | 637 tests pass; 13/14 smoke passed, knowledge passed unchanged rerun after a one-word STT miss | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
 | Custom wake phrase | Asset loading and WAV evaluation tooling; training recipe prepared | A trained `yo_jesse.onnx` meets sampled recall/false-activation gates and works with Mithilesh's real voice, including interruption and echo checks |
-| Own-voice clone | User likes take 2's tone with original reference pauses; background-noise cleanup awaits listening review | Accepted clean voice, matching runtime settings, and acceptable latency in a normal headset conversation |
+| Own-voice clone | Cleaned take 2 accepted; matching voice and generalized noise cleanup integrated | Acceptable latency and a normal headset conversation with the approved voice |
 | Phone calls | G.711 codec and existing transport seam | Echo-safe call transport, authenticated Media Streams/TwiML integration, public endpoint, and a real call using Mithilesh's account/number |
 | Release usability | Windows launcher and current instructions | Start reliably from a fresh terminal, diagnose missing assets, preserve memory across restart, document actual limitations |
 
 ## Voice brief
 
 2026-10-07: the user selected **k2-fsa/OmniVoice** and supplied his own recording.
-The current path is local zero-shot cloning and audition before integration;
-Piper fine-tuning is no longer the first voice experiment. A saved OmniVoice prompt
-requires the OmniVoice model and is not a Piper-compatible exported voice.
-Local GTX 1050 inference is now measured: roughly 5–6 seconds for a short
-eight-step audition, with the audio codec on CPU. This is an audition candidate;
-the persistent backend is now available as an explicit launch option. User likeness
-approval and live headset acceptance remain pending. In the first runtime check,
-warm generation took 4.66–6.14s, cold startup 55.21s, and the first reply after an
-interrupted generation took 21.51s including model reload. These are single samples.
-On 2026-10-08 Mithilesh rejected that eight-step voice as very robotic. It is not
-an accepted voice. Two full-precision, 32-step comparisons now test the original
-and expressive reference excerpts. Their naturalness still requires his judgment.
-He subsequently described B (expressive reference) as somewhat natural and asked
-for a more natural tone. B is the preferred starting point, not final acceptance.
-New auditions test modestly slower pacing and preservation of reference pauses;
-neither has been selected for everyday use.
-He then approved take 2's tone but reported background static. A cleanup of the
-same take reduces measured pause noise by about 12 dB while retaining timing and
-words. Auditory cleanup acceptance and integration of the preferred settings remain open.
+On 2026-10-09 he accepted cleaned take 2 and authorized integration. The approved
+settings are the expressive reference with its pauses retained, 32 decoding steps,
+CUDA float32, and noise cleanup. The saved prompt requires the local OmniVoice
+base model and audio tokenizer; it is not a standalone Piper voice.
+
+The persistent backend now reproduces that take closely and uses a saved noise
+reference to clean new replies without sampling their speech. The private
+data/voice-clone/default.json selects it for this PC. An explicit --voice option
+selects Piper instead, and installations without a default profile still use Piper.
+
+Quality is accepted; speed is still a limitation. Actual generation/cleanup took
+24.32s and 27.09s for two short replies. Cold startup took 55.22s, and the first
+reply after interrupting generation took 43.18s including reload. The stop signal
+at 0.50s returned at 0.57s with no audio. These are single-run measurements, not
+full conversation latency. A normal headset conversation remains unverified.
 
 Use Mithilesh's own voice, with American English, approximately age 21, and a
 charismatic, friendly delivery. He authorized cloning his own voice. The recordings
 must supply the desired accent and energy; a text label does not guarantee them.
-Keep the current Ryan voice available until the clone is accepted.
+Keep Ryan available as the explicit faster voice option.
 
 ## Execution order
 
@@ -46,11 +42,10 @@ Training route chosen 2026-10-06: use the prepared Colab notebook on the **free 
 only**. No paid compute is authorized. The notebook is prepared; its first GPU
 run and the trained model are still pending.
 
-1. Collect and review the voice pilot; prepare a separate GPU training environment.
+1. Keep the accepted voice quality; reduce latency and validate it on the headset.
 2. Train `yo Jesse` with the upstream synthetic-data pipeline. Evaluate held-out
    recordings and real background audio locally before selecting it for daily use.
-3. Compare OmniVoice auditions from the user's recording, select an accepted voice,
-   and measure an inference backend fast enough for conversation before integration.
+3. Verify the selected wake and voice assets together in normal conversation.
 4. Validate a normal local conversation using the selected wake/voice assets.
 5. Build phone transport with an explicit echo strategy. Local half-duplex tests
    are not evidence of full-duplex phone safety. Then connect the account/number
@@ -59,6 +54,6 @@ run and the trained model are still pending.
 Training, microphone acceptance and a live call are **not complete**. The repository
 currently contains no trained `yo Jesse` model. Own-voice prompts and audio exist
 locally under ignored data; they are not committed or uploaded. GPU voice inference
-is opt-in; speaker authentication remains deferred.
+is selected locally through the private default profile; speaker authentication remains deferred.
 
 See [training/README.md](training/README.md) for collection and training commands.

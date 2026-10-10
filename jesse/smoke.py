@@ -46,6 +46,7 @@ import numpy as np
 from scipy.signal import resample_poly
 
 from jesse.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
+from jesse.audio.iteration import audio_chunks
 from jesse.audio.vad import EnergyVad
 from jesse.audio.wakeword import OpenWakeWordDetector
 from jesse.config import CONFIG
@@ -178,7 +179,7 @@ class ScriptedTransport:
         self.play_calls += 1
         self._speaking = True
         self._started_speaking.set()
-        for chunk in frames:
+        async for chunk in audio_chunks(frames):
             self.played.append(chunk)
             real_seconds = len(chunk) / 2 / sample_rate
             await asyncio.sleep(real_seconds * self.playback_speed)

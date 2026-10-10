@@ -3,9 +3,13 @@
 User selection: **k2-fsa/OmniVoice**, 2026-10-07. This replaces Piper fine-tuning
 as the first voice-clone experiment. The original recording, reference excerpts,
 transcripts, voice prompts and auditions stay in ignored **data/voice-clone/**.
-Nothing is uploaded. Ryan remains the default. An optional inference backend is
-integrated, but the eight-step sample was rejected as robotic on 2026-10-08 and
-no own-voice candidate is accepted yet.
+Nothing is uploaded. **Current status, 2026-10-09:** cleaned take 2 is approved
+and integrated, selected on this PC by data/voice-clone/default.json. It uses the
+untrimmed expressive prompt, CUDA fp32, 32 steps, preserved output pauses and noise
+cleanup. The older auditions below are retained as experimental history. Ryan is
+available with --voice en_US-ryan-high; installations without a local default
+profile continue to use Piper. Quality is accepted; latency and live headset
+acceptance remain open.
 
 OmniVoice conditions a shared model on a short recording; this first clone needs
 no fine-tuning. Its recommended reference length is 3–10 seconds. Keep complete
@@ -283,3 +287,62 @@ only reduced pause noise by 0.92 dB and is retained as steps-32-clean.wav; it is
 not the candidate to present. Detailed source hashes, settings and measurements
 are in steps-32-clean-profiled-report.json. No runtime filter is enabled yet.
 FFmpeg reference: https://ffmpeg.org/ffmpeg-filters.html#afftdn
+
+## Approved voice in the conversation loop (2026-10-09)
+
+The user approved the cleaned take and explicitly asked to proceed. The worker
+now supports cuda-fp32, keep_pauses and an optional reproducibility seed. The local
+runtime-approved.json contains:
+
+~~~json
+{
+  "python": "../omnivoice-gpu-env/Scripts/python.exe",
+  "model": "../omnivoice-model",
+  "prompt": "audition-expressive-untrimmed/voice-prompt.pt",
+  "mode": "cuda-fp32",
+  "steps": 32,
+  "keep_pauses": true,
+  "seed": 42,
+  "noise_reference": "approved-noise-reference.wav"
+}
+~~~
+
+The same settings in private data/voice-clone/default.json select this voice for
+Start-Jesse.cmd and jesse run. An explicit --omnivoice-profile selects another
+profile; --voice selects Piper. Missing/corrupt configured assets or missing FFmpeg
+fail clearly. There is no silent CPU/voice substitution. Private assets stay local.
+
+Cleanup uses a one-second, 24kHz mono PCM16 noise-only excerpt from the approved
+take, saved as approved-noise-reference.wav. For each new reply, it prepends 1.5s
+of this calibration audio, profiles that prefix with the accepted afftdn settings,
+then removes the prefix and 600-sample filter delay. It never samples a new reply's
+opening words as noise. Output length must match the input exactly. No additional
+post-cleanup normalization is applied.
+
+FFmpeg pipe I/O runs on a separate thread because Windows communicate(timeout)
+can otherwise block while writing stdin. Cancellation and a ten-second deadline
+kill/reap the cleanup process. A failed cleanup produces an explicit voice error;
+it does not play the uncleaned reply. Generation interruption still reaps the model
+worker; a later reply reloads it. Cancellation during cleanup keeps the model warm.
+
+Processing the approved take through this generalized path gives correlation
+0.999992, zero alignment lag, and a speech-level difference of -0.0044 dB versus
+the accepted file. Regeneration through the actual worker produced correlation
+0.999992 as well, with pause noise -65.83 dBFS. This is numeric parity for one take,
+not a guarantee that every future sentence has identical quality.
+
+Actual worker reuse/interrupt/recovery evidence is under
+data/voice-clone/runtime-approved-smoke-2026-10-09. Two replies took 24.32s/27.09s;
+the 0.50s interruption returned at 0.57s with no PCM; recovery took 43.18s including
+reload. Startup took 55.22s. All three WAVs retained their intended words in local
+Whisper. These settings prioritize the approved quality and remain slow.
+
+The new full conversation check uses real wake detection, Whisper, Ollama, cloned
+speech, and a temporary memory store with simulated hardware:
+
+~~~powershell
+.venv/Scripts/python.exe -m training.smoke_omnivoice_loop --profile data/voice-clone/runtime-approved.json --output data/voice-clone/new-approved-loop-check
+~~~
+
+Its audio iterator is pulled off the event loop like real playback. The ordinary
+14-scenario smoke continues to use Piper; run both when changing this integration.

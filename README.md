@@ -91,11 +91,12 @@ you supply a measured gain/threshold pair or `--no-calibrate`.
 
 See **[training/README.md](training/README.md)** for local own-voice recording,
 training/export instructions, custom-model selection, and wake-word evaluation.
-For the optional local clone, see **[training/OMNIVOICE.md](training/OMNIVOICE.md)**.
-The eight-step audition was rejected as robotic. The expressive 32-step reference
-led to a preferred take with original reference pauses. The user likes its tone;
-a noise-reduced copy is now awaiting listening review.
-Omitting the optional voice profile keeps the configured Piper voice.
+The approved cleaned voice is selected on this PC by the private
+`data/voice-clone/default.json` profile. **Start-Jesse.cmd** and `jesse run` use it
+automatically. Its quality setting is slow on the GTX 1050: measured short replies
+took 24–27 seconds to generate. For the faster Piper voice, launch
+`Start-Jesse.cmd --voice en_US-ryan-high`. Installations without the local default
+profile use Piper. See **[training/OMNIVOICE.md](training/OMNIVOICE.md)** for setup.
 
 ## Setup
 

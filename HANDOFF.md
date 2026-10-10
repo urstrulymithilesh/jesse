@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-08 · 630 tests · 14/14 smoke (last runtime change) · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-09 · 637 tests · 13/14 smoke, knowledge passed targeted rerun · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -1176,3 +1176,54 @@ Only docs and insignificant progress v2.0.21 changed. Real audio processing,
 alignment/noise checks and local ASR are the smoke evidence for this turn. All
 recordings/processed WAVs/reports remain ignored and local. No default voice change.
 Validation: all 630 tests passed in 9.50s; diff checks passed.
+
+## 31. Approved cleaned voice integrated and selected locally — 2026-10-09
+
+User said "great" after hearing steps-32-clean-profiled.wav, then "go ahead" to
+integration. The accepted settings are the untrimmed expressive reference, CUDA
+float32, 32 steps, seed 42 and preserved output pauses. The persistent worker now
+supports these settings. Private data/voice-clone/runtime-approved.json is also
+installed as default.json, so Start-Jesse.cmd and jesse run select this voice on
+this PC. Explicit --voice en_US-ryan-high selects the faster Piper voice. Other
+installations without a private default continue to use Piper. Broken selected
+profiles fail clearly; there is no silent voice or CPU fallback.
+
+New jesse/tts/cleanup.py profiles a saved one-second noise-only excerpt from the
+approved take. It prepends 1.5s of calibration noise to each generated reply,
+applies the accepted FFmpeg afftdn settings, and removes the prefix plus the
+600-sample filter delay. Never profile the first second of NEW speech. Exact
+output length is checked; cleanup errors do not play uncleaned audio. All pipe
+I/O runs on a separate thread: Windows communicate(timeout=...) alone can block
+writing stdin. Cancellation/deadline kills and reaps the child even when it does
+not read stdin. Tests reproduce this condition. FFmpeg is required locally.
+
+The generalized filter matches the approved cleaned take with correlation
+0.999992, zero lag and -0.0044 dB speech-level difference. Actual regeneration
+through the worker also gives correlation 0.999992 and pause noise -65.83 dBFS.
+Evidence: data/voice-clone/runtime-approved-smoke-2026-10-09. Startup 55.22s;
+two replies generated/cleaned in 24.32s and 27.09s with worker reuse. Interrupt at
+0.50s returned at 0.57s, no PCM, worker reaped; recovery took 43.18s including
+reload. Local Whisper recovered the intended words in all three WAVs. This is
+quality parity for the tested take, not a promise about every future sentence.
+
+New training/smoke_omnivoice_loop.py passed real wake -> Whisper -> Ollama ->
+cleaned clone -> temporary memory, with simulated audio hardware. Result under
+data/voice-clone/approved-loop-2026-10-09: 2.24s spoken reply, 51.95s total including
+startup, listening state restored, lock released and model closed. The shared
+ScriptedTransport now pulls synthesis off the event loop like actual playback.
+
+Validation: 637 tests passed in 10.05s; changed-file lint and diff checks passed.
+Normal Piper real-stack smoke: 13/14 passed in 255s. Knowledge failed because
+Whisper heard the synthetic "yes" as "And that's...". An unchanged targeted rerun
+passed in 24s: "Yes." -> "They sleep between 14-18 hours a day, usually in short
+bursts." This is the previously observed one-word recognition flake (§21), not a
+fully green single run. Full log: data/smoke-approved-voice-2026-10-09.log. Remote,
+birthday-plan recall, memory, timer and interruption checks passed. Production
+memory was untouched. Progress v2.0.22 is significant: the accepted voice is now
+usable in the conversation loop. All recordings, prompts, noise and profiles stay
+ignored/local; no voice upload or new branch.
+
+Next: a normal wired-headset acceptance session and reducing the measured 24–27s
+generation delay while preserving the accepted sound. Do not claim natural live
+conversation is verified yet. Custom yo Jesse training still needs the authorized
+free Colab run; phone transport/echo handling and real-call acceptance remain open.

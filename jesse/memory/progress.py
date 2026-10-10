@@ -465,6 +465,16 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "voice settings have not changed",
         False,
     ),
+    ProgressEntry(
+        "v2.0.22 — the approved voice can speak in conversation", "2026-10-09",
+        "Mithilesh approved the cleaned second take. Jesse can now use its "
+        "reference, full-precision settings and preserved pauses in the voice "
+        "loop, with noise cleanup that does not mistake new words for background "
+        "sound. That profile is selected on this PC, and Ryan stays available "
+        "as a faster option. The accepted quality still takes tens of seconds "
+        "per short reply on this GPU; a normal headset session remains to be checked",
+        True,
+    ),
 ]
 
 
