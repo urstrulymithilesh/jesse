@@ -93,8 +93,9 @@ See **[training/README.md](training/README.md)** for local own-voice recording,
 training/export instructions, custom-model selection, and wake-word evaluation.
 The approved cleaned voice is selected on this PC by the private
 `data/voice-clone/default.json` profile. **Start-Jesse.cmd** and `jesse run` use it
-automatically. Its quality setting is slow on the GTX 1050: measured short replies
-took 24–27 seconds to generate. For the faster Piper voice, launch
+automatically. The selected 16-step sample A keeps the approved reference and noise
+cleanup. Measured short replies took 12–15 seconds to generate on the GTX 1050;
+this remains a noticeable wait. For the faster Piper voice, launch
 `Start-Jesse.cmd --voice en_US-ryan-high`. Installations without the local default
 profile use Piper. See **[training/OMNIVOICE.md](training/OMNIVOICE.md)** for setup.
 

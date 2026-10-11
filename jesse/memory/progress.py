@@ -483,6 +483,14 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "32-step voice stays selected until he is happy with a faster take",
         False,
     ),
+    ProgressEntry(
+        "v2.0.24 — the faster voice was chosen", "2026-10-11",
+        "Mithilesh chose sample A. Jesse now uses its 16-step setting with the "
+        "same expressive reference, preserved pauses and static cleanup. The "
+        "earlier 32-step profile stays available locally. This reduces the wait, "
+        "but a normal headset conversation still needs to be checked",
+        False,
+    ),
 ]
 
 

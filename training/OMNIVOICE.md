@@ -3,9 +3,9 @@
 User selection: **k2-fsa/OmniVoice**, 2026-10-07. This replaces Piper fine-tuning
 as the first voice-clone experiment. The original recording, reference excerpts,
 transcripts, voice prompts and auditions stay in ignored **data/voice-clone/**.
-Nothing is uploaded. **Current status, 2026-10-09:** cleaned take 2 is approved
-and integrated, selected on this PC by data/voice-clone/default.json. It uses the
-untrimmed expressive prompt, CUDA fp32, 32 steps, preserved output pauses and noise
+Nothing is uploaded. **Current status, 2026-10-11:** the user selected faster
+sample A, using 16 steps. It is selected on this PC by data/voice-clone/default.json.
+It uses the untrimmed expressive prompt, CUDA fp32, preserved output pauses and noise
 cleanup. The older auditions below are retained as experimental history. Ryan is
 available with --voice en_US-ryan-high; installations without a local default
 profile continue to use Piper. Quality is accepted; latency and live headset
@@ -386,3 +386,27 @@ prove equal naturalness or conversational latency. The user has not judged the
 16/24-step versions; default.json remains the approved 32-step profile. All audio
 and prompts remain local. The three real generations plus cleanup/ASR checks are
 the smoke evidence for this benchmark-only change; no live runtime code changed.
+
+## Sample A selected for daily use (2026-10-11)
+
+The user answered "A", selecting latency-auditions-2026-10-11/steps-16-clean.wav.
+Private runtime-approved-16.json and default.json now use 16 steps. All other
+settings stay as in the approved 32-step profile: untrimmed expressive prompt,
+CUDA fp32, seed 42, output pauses retained and the saved noise reference. The
+original runtime-approved.json remains available as the 32-step alternative.
+
+Actual persistent-worker verification under runtime-16-smoke-2026-10-11 passed:
+two replies took 12.45/14.61s, worker reused, interruption at 0.50s returned at
+0.55s with no audio and the worker reaped, recovery took 26.78s including reload.
+Startup was 13.46s in this run; cache state means it cannot be compared directly
+with the earlier cold-start measurement. All three replies passed local Whisper
+word checks and were unclipped. The regenerated second reply correlates
+0.999999984 with approved sample A. The smoke report's user_approved_similarity
+flag remains false because its new recordings were not independently reviewed;
+the user's "A" judgment refers to the audition, with numeric runtime parity checked.
+
+No inference algorithm changed. These runtime checks exercise the supported
+profile setting selected by the user; the live headset acceptance is still open.
+The full cloned-voice conversation smoke also passed with real wake/Whisper/Ollama
+and temporary memory (simulated hardware): approved-16-loop-2026-10-11, 47.18s total
+including startup, 3s reply audio, listening state restored and model closed.

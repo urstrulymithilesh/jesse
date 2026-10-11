@@ -1263,3 +1263,33 @@ are this isolated benchmark change's smoke evidence. Live runtime code unchanged
 last normal smoke remains §31. Progress v2.0.23 is insignificant. Next is listening
 judgment, then another real worker/loop check if a faster setting is selected.
 Headset acceptance, custom wake training and phone milestones remain open.
+
+## 33. User selected A; 16-step voice activated — 2026-10-11
+
+User answered "A", selecting latency-auditions-2026-10-11/steps-16-clean.wav.
+Created private runtime-approved-16.json, verified it, then copied it to default.json.
+Normal factory/launcher selection now resolves the 16-step clone. The original
+runtime-approved.json remains the 32-step alternative. No algorithm or reference
+change: CUDA fp32, untrimmed expressive prompt, seed 42, preserved output pauses,
+and approved-noise-reference.wav cleanup are unchanged. No voice assets uploaded.
+
+Actual runtime-16-smoke-2026-10-11 evidence: startup 13.46s; two replies 12.45/14.61s
+with worker reuse; interruption at 0.50s returned at 0.55s with no PCM and worker
+reaped; recovery 26.78s including reload; final worker closed. All three replies
+passed local Whisper word checks and were unclipped. Regenerated second reply
+matches approved A at correlation 0.999999984. Startup cache state is uncontrolled:
+do not attribute its difference from the old cold-start result to step count.
+
+Full clone conversation smoke passed under approved-16-loop-2026-10-11: actual wake,
+Whisper, Ollama, voice and temporary memory; 3s reply audio, 47.18s total including
+startup, listening state restored, lock released and model closed. Hardware is
+simulated; no headset acceptance is claimed. Production memory untouched.
+
+All 640 tests passed in 10.34s. The real clone worker and full clone loop are the
+smoke checks for this local setting change. Normal broad Piper smoke remains §31;
+runtime code unchanged. Progress v2.0.24 records the accepted tuning, insignificant
+because the voice capability already exists. README/RELEASE now reflect 12–15s
+measured generation for these short replies, still a noticeable wait.
+
+Next: coordinated wired-headset acceptance, then custom wake training and phone
+milestones. The faster voice is selected and tested; no further A/B approval needed.

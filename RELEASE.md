@@ -6,17 +6,18 @@ milestones. This file tracks acceptance, not estimated percentages.
 
 | Milestone | Current evidence | Done when |
 |---|---|---|
-| Core conversation and memory | 637 tests pass; 13/14 smoke passed, knowledge passed unchanged rerun after a one-word STT miss | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
+| Core conversation and memory | 640 tests pass; last broad smoke 13/14 passed, knowledge passed unchanged rerun after a one-word STT miss | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
 | Custom wake phrase | Asset loading and WAV evaluation tooling; training recipe prepared | A trained `yo_jesse.onnx` meets sampled recall/false-activation gates and works with Mithilesh's real voice, including interruption and echo checks |
-| Own-voice clone | Cleaned take 2 accepted; matching voice and generalized noise cleanup integrated | Acceptable latency and a normal headset conversation with the approved voice |
+| Own-voice clone | Faster 16-step sample A accepted; preserved reference pauses and noise cleanup integrated | Acceptable latency and a normal headset conversation with the approved voice |
 | Phone calls | G.711 codec and existing transport seam | Echo-safe call transport, authenticated Media Streams/TwiML integration, public endpoint, and a real call using Mithilesh's account/number |
 | Release usability | Windows launcher and current instructions | Start reliably from a fresh terminal, diagnose missing assets, preserve memory across restart, document actual limitations |
 
 ## Voice brief
 
 2026-10-07: the user selected **k2-fsa/OmniVoice** and supplied his own recording.
-On 2026-10-09 he accepted cleaned take 2 and authorized integration. The approved
-settings are the expressive reference with its pauses retained, 32 decoding steps,
+On 2026-10-09 he accepted cleaned take 2 and authorized integration. On 2026-10-11
+he selected faster sample A. The approved settings now use the same expressive
+reference with its pauses retained, 16 decoding steps,
 CUDA float32, and noise cleanup. The saved prompt requires the local OmniVoice
 base model and audio tokenizer; it is not a standalone Piper voice.
 
@@ -25,11 +26,14 @@ reference to clean new replies without sampling their speech. The private
 data/voice-clone/default.json selects it for this PC. An explicit --voice option
 selects Piper instead, and installations without a default profile still use Piper.
 
-Quality is accepted; speed is still a limitation. Actual generation/cleanup took
-24.32s and 27.09s for two short replies. Cold startup took 55.22s, and the first
-reply after interrupting generation took 43.18s including reload. The stop signal
-at 0.50s returned at 0.57s with no audio. These are single-run measurements, not
-full conversation latency. A normal headset conversation remains unverified.
+Quality is accepted; speed is still a limitation. With selected sample A, actual
+generation/cleanup took 12.45s and 14.61s for two short replies, versus the earlier
+32-step measurements of 24.32s and 27.09s. Startup in this run took 13.46s, and the
+first reply after interrupting generation took 26.78s including reload. The stop
+signal at 0.50s returned at 0.55s with no audio. Startup depends on cache state;
+the earlier 55.22s measurement is not a controlled step-count comparison. These
+are single-run measurements, not full conversation latency. A normal headset
+conversation remains unverified.
 
 Use Mithilesh's own voice, with American English, approximately age 21, and a
 charismatic, friendly delivery. He authorized cloning his own voice. The recordings
