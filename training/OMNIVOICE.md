@@ -346,3 +346,43 @@ speech, and a temporary memory store with simulated hardware:
 
 Its audio iterator is pulled off the event loop like real playback. The ordinary
 14-scenario smoke continues to use Piper; run both when changing this integration.
+
+## Latency profiling and faster auditions (2026-10-11)
+
+The benchmark now accepts --profile-stages to measure _generate_iterative and
+_decode_and_post_process separately. CUDA is synchronized around each timed stage;
+timings accumulate across chunks and wrappers are restored on success or failure.
+This optional instrumentation does not change the live worker or its settings.
+
+Measured the approved seven-second take with 4, 1, 2, then 4 CPU threads in one
+loaded process. Totals were 27.13, 27.55, 26.92 and 26.81 seconds. Generation alone
+took 25.45–25.90s; decoding took 1.24–2.10s. Four-thread outputs were byte-identical;
+the others differed only numerically (correlation above 0.999999999999). The small
+timing differences do not establish a thread-tuning improvement. Evidence is in
+ignored data/voice-clone/latency-profile-2026-10-11/report.json.
+
+New controlled auditions use the approved untrimmed expressive prompt, fp32,
+seed 42, preserved pauses, four CPU threads and identical words:
+
+~~~powershell
+data/omnivoice-gpu-env/Scripts/python.exe -m training.benchmark_omnivoice --prompt data/voice-clone/audition-expressive-untrimmed/voice-prompt.pt --output data/voice-clone/new-latency-comparison --mode cuda-fp32 --steps 16 24 32 --keep-pauses --profile-stages --text "That sounds exciting. Tell me a little more about what you have in mind."
+~~~
+
+| Steps | Generation including decode | Iterative generation | Decode | Cleanup |
+|---|---|---|---|---|
+| 16 | 14.62s | 12.991s | 1.627s | 0.10s |
+| 24 | 21.09s | 18.789s | 2.296s | 0.14s |
+| 32 | 26.42s | 25.036s | 1.373s | 0.14s |
+
+Cleanup uses jesse.tts.cleanup.clean_pcm on each normalized *-listen.wav with the
+existing approved-noise-reference.wav. Present only steps-16-clean.wav and
+steps-24-clean.wav under data/voice-clone/latency-auditions-2026-10-11. Every result
+is seven seconds long, unclipped, and preserves all words in local Whisper. The
+32-step cleaned control matches the accepted take at correlation 0.999992.
+report.json and quality-checks.json retain measurements locally.
+
+These single-run timing comparisons exclude startup, LLM and STT. They do not
+prove equal naturalness or conversational latency. The user has not judged the
+16/24-step versions; default.json remains the approved 32-step profile. All audio
+and prompts remain local. The three real generations plus cleanup/ASR checks are
+the smoke evidence for this benchmark-only change; no live runtime code changed.

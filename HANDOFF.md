@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-09 · 637 tests · 13/14 smoke, knowledge passed targeted rerun · Python 3.13 · `D:\New folder\jesse` ·
+2026-10-11 · 640 tests · 13/14 smoke, knowledge passed targeted rerun (last runtime change) · Python 3.13 · `D:\New folder\jesse` ·
 `github.com/urstrulymithilesh/jesse`
 
 ---
@@ -1227,3 +1227,39 @@ Next: a normal wired-headset acceptance session and reducing the measured 24–2
 generation delay while preserving the accepted sound. Do not claim natural live
 conversation is verified yet. Custom yo Jesse training still needs the authorized
 free Colab run; phone transport/echo handling and real-call acceptance remain open.
+
+## 32. Voice latency measured; faster cleaned auditions ready — 2026-10-11
+
+User said "next". Investigated delay without replacing the accepted voice.
+Generation consumes about 25.5s of a 27s take; CPU decoding about 1.3s, cleanup
+about 0.1s. A 4/1/2/4-thread comparison took 27.13/27.55/26.92/26.81s, providing
+no convincing thread-tuning win. Four-thread generations were byte-identical.
+Report: data/voice-clone/latency-profile-2026-10-11/report.json. Do not move the
+codec to the small GPU expecting it to remove the main delay.
+
+Added optional --profile-stages to training/benchmark_omnivoice.py and a small
+timing context manager. It synchronizes CUDA, accumulates stage time and restores
+model methods even after failure. Tests cover synchronization, multiple calls,
+restoration, and preserving completed benchmark evidence when a later run fails.
+
+Actual 16/24/32-step comparisons with the SAME approved reference, fp32, seed,
+pauses and words took 14.62/21.09/26.42s respectively, plus 0.10–0.14s cleanup.
+All produce 7s audio; all intended words were recovered by local Whisper, no
+clipping, length preserved. The 32-step cleaned control correlates 0.999992 with
+the accepted file. Listening candidates, all private and ignored:
+
+- A: data/voice-clone/latency-auditions-2026-10-11/steps-16-clean.wav
+- B: data/voice-clone/latency-auditions-2026-10-11/steps-24-clean.wav
+
+The folder also has raw/listening WAVs, report.json and quality-checks.json.
+These faster settings are NOT user-approved. The earlier rejected eight-step
+voice is not being restored; these tests retain the subsequently accepted
+reference and cleanup. Default.json remains 32 steps. Ask whether A or B keeps
+the natural sound; do not infer subjective quality from ASR or lower latency.
+The measurements exclude startup/LLM/STT and are single samples per step count.
+
+640 tests passed. Real GPU generations, filtering, control parity and ASR above
+are this isolated benchmark change's smoke evidence. Live runtime code unchanged;
+last normal smoke remains §31. Progress v2.0.23 is insignificant. Next is listening
+judgment, then another real worker/loop check if a faster setting is selected.
+Headset acceptance, custom wake training and phone milestones remain open.

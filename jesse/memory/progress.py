@@ -475,6 +475,14 @@ PROGRESS_LOG: list[ProgressEntry] = [
         "per short reply on this GPU; a normal headset session remains to be checked",
         True,
     ),
+    ProgressEntry(
+        "v2.0.23 — measured the voice delay", "2026-10-11",
+        "Most of the wait is in generating the voice, not cleaning its sound. "
+        "Changing CPU threads did not help much. Two faster takes with the same "
+        "reference and cleanup are ready for Mithilesh to judge; the approved "
+        "32-step voice stays selected until he is happy with a faster take",
+        False,
+    ),
 ]
 
 

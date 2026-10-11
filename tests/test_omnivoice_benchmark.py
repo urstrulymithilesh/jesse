@@ -29,7 +29,13 @@ def bench(tmp_path, monkeypatch):
             assert kwargs["voice_clone_prompt"] is prompt
             if kwargs["num_step"] == 32:
                 raise RuntimeError("injected inference failure")
-            return [np.ones(2400, dtype=np.float32) * 0.1]
+            return [self._decode_and_post_process(self._generate_iterative())]
+
+        def _generate_iterative(self):
+            return np.ones(2400, dtype=np.float32) * 0.1
+
+        def _decode_and_post_process(self, audio):
+            return audio
 
     model = Model()
     torch = SimpleNamespace(
@@ -49,12 +55,19 @@ def bench(tmp_path, monkeypatch):
     return argv, output, calls
 
 
-def test_benchmark_retains_completed_audio_and_error_when_later_run_fails(bench):
+@pytest.mark.parametrize("profiling", [False, True])
+def test_benchmark_retains_completed_audio_and_error_when_later_run_fails(bench, profiling):
     argv, output, calls = bench
     with pytest.raises(RuntimeError, match="injected"):
-        main(argv + ["--steps", "16", "32"])
+        main(argv + ["--steps", "16", "32"] + (["--profile-stages"] if profiling else []))
     report = json.loads((output / "report.json").read_text())
     assert report["runs"][0]["steps"] == 16
+    assert report["profile_stages"] is profiling
+    if profiling:
+        assert set(report["runs"][0]["stage_seconds"]) == {
+            "_generate_iterative", "_decode_and_post_process"}
+    else:
+        assert "stage_seconds" not in report["runs"][0]
     assert report["error"] == "RuntimeError: injected inference failure"
     assert report["user_approved_similarity"] is False
     assert (output / "steps-16-listen.wav").exists()

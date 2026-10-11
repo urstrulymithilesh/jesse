@@ -5,6 +5,7 @@ import json
 import math
 import os
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,6 +19,8 @@ def main(argv=None):
                         default="cpu")
     parser.add_argument("--steps", type=int, nargs="+", default=[16, 32])
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--profile-stages", action="store_true",
+                        help="Synchronize and measure model generation and audio decoding separately")
     parser.add_argument("--speed", type=float, help="Model duration factor (below 1 is slower)")
     parser.add_argument("--keep-pauses", action="store_true",
                         help="Disable generated-audio silence removal for a pacing comparison")
@@ -47,8 +50,10 @@ def main(argv=None):
 
     if __package__:
         from .clone_omnivoice import listening_preview
+        from .voice_timing import measure_stages
     else:
         from clone_omnivoice import listening_preview
+        from voice_timing import measure_stages
     torch.set_num_threads(args.threads)
     cuda = args.mode.startswith("cuda")
     if cuda and not torch.cuda.is_available():
@@ -59,6 +64,7 @@ def main(argv=None):
         "text": args.text, "prompt": str(args.prompt.resolve()), "runs": [],
         "tokenizer_device": "cpu", "user_approved_similarity": False,
         "seed": 42, "generation_options": generation_options,
+        "profile_stages": args.profile_stages,
     }
 
     def save():
@@ -96,9 +102,12 @@ def main(argv=None):
                     torch.cuda.synchronize()
                 print(f"Generating {steps} steps...", flush=True)
                 started = time.perf_counter()
-                audio = model.generate(text=args.text, language="en",
-                                       voice_clone_prompt=prompt, num_step=steps,
-                                       **generation_options)[0]
+                timing = (measure_stages(model, torch.cuda.synchronize if cuda else lambda: None)
+                          if args.profile_stages else nullcontext({}))
+                with timing as stages:
+                    audio = model.generate(text=args.text, language="en",
+                                           voice_clone_prompt=prompt, num_step=steps,
+                                           **generation_options)[0]
                 if cuda:
                     torch.cuda.synchronize()
                 elapsed = time.perf_counter() - started
@@ -111,6 +120,9 @@ def main(argv=None):
                 result = {"steps": steps, "generation_seconds": round(elapsed, 2),
                           "audio_seconds": round(duration, 2), "rtf": round(elapsed / duration, 2),
                           "preview_gain": round(gain, 4)}
+                if args.profile_stages:
+                    result["stage_seconds"] = {name: round(seconds, 3)
+                                               for name, seconds in stages.items()}
                 if cuda:
                     result["peak_allocated_mib"] = round(torch.cuda.max_memory_allocated() / 2**20)
                 report["runs"].append(result)
