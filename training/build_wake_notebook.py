@@ -19,7 +19,7 @@ def build_notebook():
         cells.append(cell)
 
     add("markdown", """
-    # Train “yo Jesse” on Colab's free GPU tier
+    # Train “yo Pinkman” on Colab's free GPU tier
 
     Select **Runtime → Change runtime type → T4 GPU**, then run cells in order.
     If a free GPU is unavailable, stop and try later. No paid plan, compute-unit
@@ -39,7 +39,7 @@ def build_notebook():
     """)
     add("code", """
     import hashlib, json, pathlib, shutil, subprocess, sys, urllib.request
-    ROOT = pathlib.Path('/content/jesse-wake')
+    ROOT = pathlib.Path('/content/pinkman-wake')
     if not pathlib.Path('/content').is_dir():
         raise RuntimeError('Run this notebook in a Colab Linux GPU runtime.')
     subprocess.run(['nvidia-smi'], check=True)
@@ -53,11 +53,11 @@ def build_notebook():
         subprocess.run([str(x) for x in args], cwd=ROOT, check=True)
     """)
     hashes = {name: hashlib.sha256((HERE / name).read_text(encoding="utf-8").encode()).hexdigest()
-              for name in ("wake_support.py", "yo_jesse.json")}
+              for name in ("wake_support.py", "yo_pinkman.json")}
     add("code", f"""
     # Retrieve only public training helpers; verify the version this notebook expects.
     expected = {hashes!r}
-    base = 'https://raw.githubusercontent.com/urstrulymithilesh/jesse/main/training/'
+    base = 'https://raw.githubusercontent.com/urstrulymithilesh/pinkman/main/training/'
     for name, digest in expected.items():
         content = urllib.request.urlopen(base + name, timeout=60).read()
         if hashlib.sha256(content).hexdigest() != digest:
@@ -158,7 +158,7 @@ if embedded.shape[-1] != 96 or not np.isfinite(embedded).all():
     raise RuntimeError('Feature extractor returned invalid embeddings')
 probe = root / 'setup-probe'
 probe.mkdir(exist_ok=True)
-generate_samples(['yo Jesse'], str(probe), max_samples=2, batch_size=2)
+generate_samples(['yo Pinkman'], str(probe), max_samples=2, batch_size=2)
 if len(list(probe.glob('*.wav'))) < 2:
     raise RuntimeError('Synthetic speech setup did not produce its probe clips')
 print('GPU, imports, embeddings, and synthetic speech probe passed.', flush=True)
@@ -223,9 +223,9 @@ for i, path in enumerate(sorted(raw.rglob('*.flac'))):
 if not list(background.glob('*.wav')) or not list(rirs.glob('*.wav')):
     raise RuntimeError('Missing augmentation audio')
 defaults = yaml.safe_load((root / 'openwakeword/examples/custom_model.yml').read_text())
-overlay = json.loads((root / 'yo_jesse.json').read_text())
+overlay = json.loads((root / 'yo_pinkman.json').read_text())
 config = make_config(defaults, overlay, root, features, validation)
-write_once(root / 'yo_jesse.yaml', yaml.safe_dump(config, sort_keys=True))
+write_once(root / 'yo_pinkman.yaml', yaml.safe_dump(config, sort_keys=True))
 print(yaml.safe_dump(config), flush=True)
 """)
     ''')
@@ -240,7 +240,7 @@ print(yaml.safe_dump(config), flush=True)
     add("code", """
     def train_stage(flag, log_name):
         command = [str(PY), '-u', str(ROOT / 'train_onnx.py'),
-                   '--training_config', str(ROOT / 'yo_jesse.yaml'), flag]
+                   '--training_config', str(ROOT / 'yo_pinkman.yaml'), flag]
         if flag == '--augment_clips':
             command.append('--overwrite')
         with (ROOT / log_name).open('a') as log:
@@ -263,7 +263,7 @@ print(yaml.safe_dump(config), flush=True)
     add("markdown", """
     ## Download the candidate
     The bundle contains ONNX, a provenance/hash report, config, installed versions
-    and logs. Copy **yo_jesse.onnx** into Jesse's local **models/** folder.
+    and logs. Copy **yo_pinkman.onnx** into Pinkman's local **models/** folder.
     Keep the default wake unchanged until held-out human WAVs pass **wake-check**
     and live interruption/echo checks. See **training/README.md** for commands.
     The notebook cannot approve its own training data.
@@ -281,11 +281,11 @@ from google.colab import files
 files.download((ROOT / 'latest-bundle.txt').read_text())
     ''')
     return {"cells": cells, "metadata": {
-        "accelerator": "GPU", "colab": {"name": "Train yo Jesse.ipynb", "provenance": []},
+        "accelerator": "GPU", "colab": {"name": "Train yo Pinkman.ipynb", "provenance": []},
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
     }, "nbformat": 4, "nbformat_minor": 4}
 
 
 if __name__ == "__main__":
-    (HERE / "train_yo_jesse.ipynb").write_text(
+    (HERE / "train_yo_pinkman.ipynb").write_text(
         json.dumps(build_notebook(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

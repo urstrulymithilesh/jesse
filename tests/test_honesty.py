@@ -7,9 +7,9 @@ not refuse — it guesses — so the fix is to give him the clock and forbid the
 
 from datetime import datetime
 
-from jesse.context import now_context
-from jesse.persona import SYSTEM_PROMPT
-from jesse.tts.speech_text import clean_for_speech
+from pinkman.context import now_context
+from pinkman.persona import SYSTEM_PROMPT
+from pinkman.tts.speech_text import clean_for_speech
 
 WHEN = datetime(2026, 8, 23, 9, 53)
 
@@ -72,7 +72,7 @@ def test_no_rule_quotes_the_bad_output_it_forbids():
     First: an anti-tic rule quoted "you're the one who made me, Mithilesh" as the
     behaviour to avoid, and the model copied the example (0/5 -> 2/5).
 
-    Then, writing Jesse's persona, a rule against empty reactions quoted one — and
+    Then, writing Pinkman's persona, a rule against empty reactions quoted one — and
     "Burnt rice, dude" came back as a reply to an unrelated turn about work. Caught by
     probing, in a file whose own docstring warns against exactly this.
 
@@ -104,11 +104,11 @@ def test_no_rule_quotes_the_bad_output_it_forbids():
 
 
 def test_a_leaked_speaker_label_is_stripped():
-    """The few-shot exchanges are labelled "Jesse: ...", and he copied the label."""
-    assert clean_for_speech("Jesse: I have no way of seeing outside") == \
+    """The few-shot exchanges are labelled "Pinkman: ...", and he copied the label."""
+    assert clean_for_speech("Pinkman: I have no way of seeing outside") == \
         "I have no way of seeing outside"
-    assert clean_for_speech("jesse - hello") == "hello"
+    assert clean_for_speech("pinkman - hello") == "hello"
 
 
 def test_his_name_is_untouched_when_it_is_part_of_the_sentence():
-    assert clean_for_speech("Jesse is the name you gave me") == "Jesse is the name you gave me"
+    assert clean_for_speech("Pinkman is the name you gave me") == "Pinkman is the name you gave me"

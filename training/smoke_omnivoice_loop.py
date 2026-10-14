@@ -1,4 +1,4 @@
-"""Real wake/STT/Ollama/memory/approved voice loop with simulated audio hardware."""
+"""Manual wake/real STT/Ollama/memory/approved voice loop with simulated audio hardware."""
 
 import argparse
 import asyncio
@@ -8,15 +8,15 @@ import time
 import wave
 from pathlib import Path
 
-from jesse.core.state import ConversationState
-from jesse.smoke import Mouth, ScriptedTransport, _build
-from jesse.tts.omnivoice import OmniVoiceSynthesizer
+from pinkman.core.state import ConversationState
+from pinkman.smoke import Mouth, ScriptedTransport, _build
+from pinkman.tts.omnivoice import OmniVoiceSynthesizer
 
 
 async def run(profile, output):
     output.mkdir(parents=True, exist_ok=False)
     mouth = Mouth()
-    frames = mouth.frames("hey jarvis") + mouth.frames("say hello in five words")
+    frames = mouth.frames("wake-control") + mouth.frames("say hello in five words")
     transport = ScriptedTransport(frames)
     synth = OmniVoiceSynthesizer(profile)
     started = time.perf_counter()
@@ -28,7 +28,7 @@ async def run(profile, output):
             users = [m.content for m in orch._history if m.role == "user"]
             replies = [m.content for m in orch._history if m.role == "assistant"]
             pcm = b"".join(transport.played)
-            assert users and "hello" in users[0].lower(), "Real wake/STT did not produce request"
+            assert users and "hello" in users[0].lower(), "Manual wake/real STT did not produce request"
             assert replies and pcm, "No spoken Ollama reply"
             assert orch.state in (ConversationState.IDLE, ConversationState.LISTENING)
             assert not orch._llm_lock.locked()

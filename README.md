@@ -1,8 +1,8 @@
-# Jesse
+# Pinkman
 
 A **local voice AI friend**. His brain, his memory and every piece of
 processing run on this machine and only this machine — no cloud APIs, no cloud costs,
-and no conversation or memory ever leaving it. Say a wake word, talk to Jesse, and he
+and no conversation or memory ever leaving it. Say a wake word, talk to Pinkman, and he
 replies in voice — and he *remembers* you across sessions.
 
 He does use the network, deliberately and narrowly: **as a connection, never as a
@@ -58,45 +58,58 @@ Working end to end, on-device:
   so a failed open is admitted rather than confirmed. Deleting, moving and running
   arbitrary scripts are deliberately excluded.
 
-- **Things he has read** — `python -m jesse learn guitar ./notes/guitar.md`. Documents
+- **Things he has read** — `python -m pinkman learn guitar ./notes/guitar.md`. Documents
   are chunked, embedded, and retrieved when he *names the subject* (in that sentence or
   a recent turn), so a corpus never barges into small talk. If his words merely brush a
   document's own vocabulary, he asks — "Are you asking about your guitar?" — and a yes
   gets the answer. He answers from the passages or says they don't cover it — right
   about five times in six, which is the honest number, not a solved problem.
 
-- **Reading his own sources** (enabled in current config) — `python -m jesse digest --fetch`, or
+- **Reading his own sources** (enabled in current config) — `python -m pinkman digest --fetch`, or
   on a 6-hourly schedule once `CONFIG.digest.enabled` is on. RSS/Atom feeds only, no
   web scraping. He never brings it up unprompted; ask "anything new?" and he tells
-  you what actually came in, or says nothing has. This is the only part of Jesse that
+  you what actually came in, or says nothing has. This is the only part of Pinkman that
   uses outbound requests to configured public feeds.
 
-- **Reaching him from away** — `python -m jesse run --remote` serves a page your phone
+- **Reaching him from away** — `python -m pinkman run --remote` serves a page your phone
   opens over [Tailscale](https://tailscale.com). It listens continuously, and the audio
   goes into the same pipeline as the desk microphone: same memory, same personality,
   same ability to open things on your computer. Two locks — only devices on your
   tailnet can reach it, and every request carries a token. Side-effect actions ask for
   confirmation when you're away.
 
-Full-vision completion is tracked in **[RELEASE.md](RELEASE.md)**. Custom `yo Jesse`
-training and cloning Mithilesh's own voice are active milestones. Local OmniVoice
-auditions and an optional GPU voice backend exist; likeness and live headset
-acceptance are pending. The custom wake model and phone-number integration remain
+Full-vision completion is tracked in **[RELEASE.md](RELEASE.md)**. Custom `yo Pinkman`
+training and cloning Mithilesh's own voice are active milestones. Sample A's cloned
+voice is accepted and selected locally; live headset acceptance is pending.
+The custom wake model and phone-number integration remain
 unfinished. The Tailscale path is built but paused.
 
-On Windows, **double-click `Start-Jesse.cmd`** after setup, or run it from a terminal.
+On Windows, **double-click `Start-Pinkman.cmd`** after setup, or run it from a terminal.
 It selects this project's Python, the real Ollama model, and the local text UI.
 It accepts the same extra options as `run`; startup still calibrates the mic unless
 you supply a measured gain/threshold pair or `--no-calibrate`.
 
+The local UI at **http://127.0.0.1:8765** is now a futuristic command center, with
+a cyan orbital core, live conversation states, session voice/brain information,
+and a transcript shared by speech and typing. Switch to **Conversation** for a
+focused view. Quick prompts fill the composer for you to review before sending.
+The core is a state indicator, not an audio level meter. All visuals, fonts and
+scripts are local, and reduced-motion preferences are respected.
+
+Click **Wake Pinkman**, wait for **Listening**, then speak. Conversation continues
+without another click until you say “go to sleep” or the listening window expires.
+Click **Interrupt** to cut a reply short. The UI opens automatically in manual
+wake mode. The custom “yo Pinkman” model still needs training; select a validated
+model explicitly with `--wake-model` and `--wake-phrase` when it is ready.
+
 See **[training/README.md](training/README.md)** for local own-voice recording,
 training/export instructions, custom-model selection, and wake-word evaluation.
 The approved cleaned voice is selected on this PC by the private
-`data/voice-clone/default.json` profile. **Start-Jesse.cmd** and `jesse run` use it
+`data/voice-clone/default.json` profile. **Start-Pinkman.cmd** and `pinkman run` use it
 automatically. The selected 16-step sample A keeps the approved reference and noise
 cleanup. Measured short replies took 12–15 seconds to generate on the GTX 1050;
 this remains a noticeable wait. For the faster Piper voice, launch
-`Start-Jesse.cmd --voice en_US-ryan-high`. Installations without the local default
+`Start-Pinkman.cmd --voice en_US-pinkman-fallback`. Installations without the local default
 profile use Piper. See **[training/OMNIVOICE.md](training/OMNIVOICE.md)** for setup.
 
 ## Setup
@@ -109,12 +122,12 @@ py -3.13 -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 ollama pull llama3.2
-# His voice (~60MB, offline after this):
-python -m piper.download_voices en_US-ryan-high --download-dir models
-# His ears — the wake-word models (~10MB, offline after this):
-python -c "import openwakeword.utils as u; u.download_models()"
+# Voice: follow training/OMNIVOICE.md for the local clone.
+# Optional Piper fallback: download a stock voice from the Piper catalogue,
+# then rename its .onnx and .onnx.json pair to en_US-pinkman-fallback.* in models/.
+# en_US-pinkman-fallback is our LOCAL alias, not a downloadable catalogue ID.
 # Download/cache transcription and embedding models before going offline:
-python -c "from jesse.stt.whisper import WhisperTranscriber; from jesse.memory.embedder import FastEmbedEmbedder; WhisperTranscriber()._ensure(); FastEmbedEmbedder().embed(['setup'])"
+python -c "from pinkman.stt.whisper import WhisperTranscriber; from pinkman.memory.embedder import FastEmbedEmbedder; WhisperTranscriber()._ensure(); FastEmbedEmbedder().embed(['setup'])"
 ```
 
 After these model downloads, every
@@ -122,20 +135,19 @@ part of him that thinks, listens, speaks or remembers works with the ethernet ca
 pulled out. The only things that want a connection are the optional extras — reading
 your RSS feeds, and reaching his remotely — and losing it costs you those, not his.
 
-> **Note:** the wake-word models install *inside* the virtualenv, so if you ever
-> delete and rebuild `.venv` you need to re-run that last command. `python spike.py`
-> checks for them and tells you if they're missing.
+Wake-model downloads are only needed when installing a validated custom wake
+model; the default buttons do not load an acoustic wake detector.
 
 Then talk to him:
 
 ```bash
-python -m jesse run --ollama          # add --device N to pick a specific mic
+python -m pinkman run --ollama          # add --device N to pick a specific mic
 ```
 
 To reuse a measured calibration, supply both numbers (these are example values):
 
 ```bash
-python -m jesse run --ollama --device 1 --gain 14.8 --threshold 1004
+python -m pinkman run --ollama --device 1 --gain 14.8 --threshold 1004
 ```
 
 Either `--gain` or `--threshold` selects manual audio settings and skips startup
@@ -143,14 +155,14 @@ calibration. A value you omit keeps its configured default, so use the measured
 pair together. Both must be finite numbers greater than zero. These overrides
 last for that run; they do not rewrite configuration.
 
-Useful extras: `python -m jesse memory` (inspect what he remembers),
-`python -m jesse devices` (list mics), `python -m jesse say "text"` (test his voice),
-`python -m jesse digest` (what he has read from your sources).
+Useful extras: `python -m pinkman memory` (inspect what he remembers),
+`python -m pinkman devices` (list mics), `python -m pinkman say "text"` (test his voice),
+`python -m pinkman digest` (what he has read from your sources).
 
 To reach him from your phone:
 
 ```bash
-python -m jesse run --ollama --remote
+python -m pinkman run --ollama --remote
 ```
 
 That prints a link and a token. The browser will only give a page the microphone over
@@ -162,7 +174,7 @@ tailscale serve https / http://127.0.0.1:8766
 
 Then open the MagicDNS name on your phone, paste the token once, and press *start
 listening*. Headphones are worth it — on speakerphone the page has to mute your mic
-while Jesse talks, so you can't interrupt him.
+while Pinkman talks, so you can't interrupt him.
 
 ## Verify your setup (the spike)
 
@@ -176,13 +188,13 @@ python spike.py path\to\clip.wav   # also time STT on a real 16kHz mono wav
 
 Green = go. A red probe (e.g. sqlite-vec won't load) blocks app code.
 
-To check speaker echo, close the running Jesse, keep the room quiet, and run:
+To check speaker echo, close the running Pinkman, keep the room quiet, and run:
 
 ```bash
 python diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 ```
 
-Pick device indices from `python -m jesse devices` and use the gain and threshold
+Pick device indices from `python -m pinkman devices` and use the gain and threshold
 printed by your calibration. Three short phrases play through the real transport;
 the report measures ambient sound, playback, and each three-second tail. Confirm
 the phrases are audible. `RISK` means tail audio could form a false user turn,
@@ -197,12 +209,12 @@ Two layers, deliberately:
 
 ```bash
 .venv\Scripts\python.exe -m pytest        # unit tests; current count in HANDOFF.md
-.venv\Scripts\python.exe -m jesse smoke    # real-stack scenarios, roughly 4-5 minutes
+.venv\Scripts\python.exe -m pinkman smoke    # real-stack scenarios, roughly 4-5 minutes
 ```
 
-(If you have run `.venv\Scriptsctivate`, plain `pytest` and `python -m jesse smoke`
+(If you have run `.venv\Scriptsctivate`, plain `pytest` and `python -m pinkman smoke`
 work too. Running them with the *system* Python fails on a missing dependency —
-`jesse` will tell you so and point at the venv rather than dumping a traceback.)
+`pinkman` will tell you so and point at the venv rather than dumping a traceback.)
 
 The unit tests drive the orchestrator with fakes — a stateless wake detector, an
 instant LLM — so they pin logic fast. But a fake can only fail in ways you thought
@@ -211,7 +223,7 @@ inside a worker thread, a real wake detector going deaf after a long reply becau
 needs continuous audio, and the wake word bleeding into the transcript and breaking
 fact extraction. None were reachable with fakes.
 
-`jesse smoke` runs the real Ollama, Piper, faster-whisper and SQLite end to end, using
+`pinkman smoke` runs the real Ollama, Piper, faster-whisper and SQLite end to end, using
 Piper as a mouth feeding the pipeline's ears — so it needs no microphone, no speakers
 and no human. It covers a conversation turn, memory stored and recalled across a new
 connection, a spoken timer firing, barge-in, the wake word still working after a long
@@ -236,7 +248,7 @@ gitignored, and no conversation, memory or audio is ever sent anywhere.
 - **Reading your sources** (`CONFIG.digest.enabled`, on) — plain GETs for the public
   RSS feeds you list. Outbound only, and they carry no conversation, no memory and no
   identifier beyond a user agent.
-- **Remote access** (`--remote`) — reaching *your* Jesse, running on *your* computer,
+- **Remote access** (`--remote`) — reaching *your* Pinkman, running on *your* computer,
   from your own devices over Tailscale. The audio travels inside a WireGuard tunnel
   between two machines you own; he does not travel at all.
 
@@ -245,7 +257,7 @@ that ever changes, this section is the thing to correct first.
 
 ## License note (TTS is GPL-3.0)
 
-Jesse's own code is MIT (see `pyproject.toml`). The TTS engine, **piper-tts**
+Pinkman's own code is MIT (see `pyproject.toml`). The TTS engine, **piper-tts**
 (OHF-Voice/piper1-gpl), is **GPL-3.0** — the old MIT `rhasspy/piper` is archived.
 
 What that means in practice for this repo:

@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from jesse import smoke
-from jesse.core.interfaces import Fact, Message
+from pinkman import smoke
+from pinkman.core.interfaces import Fact, Message
 
 
 @pytest.mark.parametrize("reply", ["I don't have a favorite color.", "I've saved that.", ""])

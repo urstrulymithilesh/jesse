@@ -1,14 +1,14 @@
-# Jesse — Handoff
+# Pinkman — Handoff
 
 > **This file is the cold-start prompt for ANY coding agent** — Claude Code, Codex,
 > Cursor, whatever is in front of you, on any machine. It assumes nothing about which
-> tool you are. Point an agent at this file and it has the full picture: what Jesse is,
+> tool you are. Point an agent at this file and it has the full picture: what Pinkman is,
 > what exists, what was rejected and why, and the failure patterns that cost real time.
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-11 · 640 tests · 13/14 smoke, knowledge passed targeted rerun (last runtime change) · Python 3.13 · `D:\New folder\jesse` ·
-`github.com/urstrulymithilesh/jesse`
+2026-10-12 · 646 tests · 14/14 smoke (171s) · Python 3.13 · `D:\New folder\pinkman` ·
+`github.com/urstrulymithilesh/pinkman`
 
 ---
 
@@ -24,8 +24,8 @@ Every change:
 
 1. Make it.
 2. `.venv\Scripts\python.exe -m pytest -q`
-3. `.venv\Scripts\python.exe -m jesse smoke` if the real stack is touched.
-4. Append one `ProgressEntry` to `jesse/memory/progress.py` — Jesse's own account, his
+3. `.venv\Scripts\python.exe -m pinkman smoke` if the real stack is touched.
+4. Append one `ProgressEntry` to `pinkman/memory/progress.py` — Pinkman's own account, his
    voice, plain words. `significant=True` only for a real capability change.
 5. Commit explaining **why**, with measurements.
 6. **Push. Every commit. No batching.**
@@ -38,7 +38,7 @@ trade honesty or a real bug for brevity.
 
 ---
 
-## 1. Who Jesse is
+## 1. Who Pinkman is
 
 A **local AI friend** — mate, hype man, the one who pushes him. Lives on one machine,
 belongs to one person, sends nothing anywhere.
@@ -70,11 +70,11 @@ belongs to one person, sends nothing anywhere.
 |---|---|
 | **Voice loop** | wake → STT → LLM → TTS on an asyncio preemption state machine. Streaming TTS: 11.0s → 4.1s to first word. Barge-in ends *listening*, not idle. Half-duplex mic gating. |
 | **Continuous conversation** | wake once, talk freely until "go to sleep". Timeouts 8s post-wake / 45s engaged — deliberately not infinite. |
-| **Text UI** | `--ui` on `127.0.0.1:8765`. Chat bubbles, charcoal, one amber accent. Same turn pipeline as speech. |
+| **Text UI** | `--ui` on `127.0.0.1:8765`. Cyan orbital core, live state, manual controls and shared transcript. Same turn pipeline as speech. |
 | **Memory** | SQLite + sqlite-vec. Facts = slots (deduped 0.88 on subject). Episodes = events (append-only, never deduped). Temporal queries deterministic. Seeded identity facts protected by `origin`, reseeded on content hash. |
 | **Timers/reminders** | create, reschedule, cancel, query. Wall-clock, survives sleep, admits lateness. Refuses to guess when ambiguous. |
 | **Actions** | open (23-target registry), media keys, file search. Deterministic parse. Every outcome logged DONE / NOT RUN / REFUSED / FAILED. Delete/move/run-script excluded. |
-| **Knowledge (RAG)** | `jesse learn <name> <path>`. Trigger = naming the subject, or a keyword-ask. Not a distance gate — that inverted on the second corpus. |
+| **Knowledge (RAG)** | `pinkman learn <name> <path>`. Trigger = naming the subject, or a keyword-ask. Not a distance gate — that inverted on the second corpus. |
 | **Sources (RSS)** | ON. 6h interval, silent fetch, reactive "what's new". Instruction-shaped items dropped at ingest. |
 | **Remote** | **PAUSED — see §4.** Built and left in place. |
 | **Smoke harness** | 14 scenarios, real stack, headless, ~4min. Piper is the mouth feeding the pipeline's ears. |
@@ -90,9 +90,9 @@ drops few-shot examples for memory questions.
 | | |
 |---|---|
 | Model | `llama3.2` via Ollama · ctx 4096 · temp 0.6 · question-keep 0.15 · keep_alive -1 · 90s timeout |
-| Voice | Piper **`en_US-ryan-high`** (22050 Hz) — only voice on disk |
+| Voice | Approved local OmniVoice clone, sample A at 16 steps; Piper fallback remains optional |
 | STT | faster-whisper `base.en`, int8, CPU |
-| Wake / stop | `hey_jarvis` (placeholder; real word will be "yo Jesse") |
+| Wake / stop | Wake Pinkman / Interrupt buttons; custom “yo Pinkman” model awaits training |
 | Mic | `--device 1` in practice · gain 1.0 · auto-calibrate on |
 | VAD | threshold 150 · silence 950ms · min-speech 300ms · pre-roll 500ms |
 | Timeouts | listen 8s · continuous 45s · continuous **on** |
@@ -103,7 +103,7 @@ drops few-shot examples for memory questions.
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
 | Progress log | 46 entries |
 
-Everything sits behind `jesse/core/interfaces.py`. Swapping a model or engine is a
+Everything sits behind `pinkman/core/interfaces.py`. Swapping a model or engine is a
 config change.
 
 ---
@@ -133,7 +133,7 @@ config change.
   plain conversation**; nemotron 0/7 false but 3/7 correct and malformed args. Neither
   is usable. The deterministic registry stands.
 - **Custom wake word + voice cloning: ACTIVE as of 2026-10-05.** Mithilesh explicitly
-  chose the full vision. Target phrase is "yo Jesse"; clone his own voice, American,
+  chose the full vision. Target phrase is "yo Pinkman"; clone his own voice, American,
   about age 21, charismatic. See `RELEASE.md`, `training/README.md` and §23. Neither
   trained asset exists yet; do not describe this as finished or keep postponing it.
 - **Voice authentication.** Pairs with the voice phase.
@@ -173,9 +173,9 @@ These cost real debugging time. They are patterns, not trivia.
 **A spoken slip is cheap; a stored one is permanent.** Asked whether he likes
 pineapple on pizza he answers with a taste he does not have, 8 times in 9, and no
 prompt wording fixed it — a one-word answer that happens to assert a preference. The
-fix went where it holds: `"Jesse does not like pineapple on pizza"` is third person,
+fix went where it holds: `"Pinkman does not like pineapple on pizza"` is third person,
 well formed, and the extraction filter *would have stored it forever*. Anything naming
-Jesse, and anything under four words, is now refused at the door. **Put the guard where
+Pinkman, and anything under four words, is now refused at the door. **Put the guard where
 the damage persists, not where the mistake is made.**
 
 **An honesty rule over-applies in both directions.** Made prominent, it produced "No
@@ -189,7 +189,7 @@ deaf after every long reply. A stateless fake can never show this. Verify a regr
 test by breaking the fix.
 
 **A prompt rule the model ignores is not a rule.** The extraction prompt said "third
-person, not your own replies"; 3 of 9 stored facts were Jesse's own lines. Fixed in
+person, not your own replies"; 3 of 9 stored facts were Pinkman's own lines. Fixed in
 code, not by asking louder. **Ask for the shape, then check the shape.**
 
 **Never quote the bad output in the rule that forbids it.** Happened twice: an anti-tic
@@ -241,7 +241,7 @@ clean when it wasn't. **A wrong check is worse than no check — it produces a c
 number. Read raw output before trusting any score, especially one that agrees with
 you.**
 
-**A green suite says nothing about a module no test imports.** `jesse run --remote`
+**A green suite says nothing about a module no test imports.** `pinkman run --remote`
 shipped broken for one commit with an unterminated f-string while 401 tests passed.
 
 **An interface can be right and still not be enough.** `AudioTransport` paid off ~70%:
@@ -281,17 +281,17 @@ than a disappointing one.
 |---|---|
 | Language | Python 3.13, venv at `.venv` |
 | Reasoning | Ollama · `llama3.2` |
-| Voice | Piper `en_US-ryan-high` (**GPL-3.0** — matters only if bundling a binary) |
+| Voice | Piper `en_US-pinkman-fallback` (**GPL-3.0** — matters only if bundling a binary) |
 | Hearing | faster-whisper `base.en` int8 CPU |
-| Wake | openWakeWord `hey_jarvis` (ONNX) |
-| Memory | SQLite + sqlite-vec — one file, `data/jesse.db` |
+| Wake | Manual UI controls (custom openWakeWord model opt-in) |
+| Memory | SQLite + sqlite-vec — one file, `data/pinkman.db` |
 | Embeddings | fastembed `bge-small-en-v1.5`, CPU |
 | Orchestration | custom asyncio loop (deliberately not LangChain) |
 | UI | stdlib `http.server` + polling |
 | QR | `segno` (pure Python; the only convenience dependency) |
 
 ```
-jesse/
+pinkman/
   orchestrator.py    event loop + preemption state machine
   persona.py         SYSTEM_PROMPT + recall_prompt()   <- tune freely, no logic
   context.py         build_messages + the anchoring blocks
@@ -303,20 +303,20 @@ tests/               585 tests
 ```
 
 ```
-.venv\Scripts\python.exe -m jesse run --device 1 --ollama --ui
-.venv\Scripts\python.exe -m jesse smoke            # 14 scenarios, real stack, ~4min
+.venv\Scripts\python.exe -m pinkman run --device 1 --ollama --ui
+.venv\Scripts\python.exe -m pinkman smoke            # 14 scenarios, real stack, ~4min
 .venv\Scripts\python.exe -m pytest -q              # 585 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
-.venv\Scripts\python.exe -m jesse memory [--forget "..."] [--dedupe [--apply]]
-.venv\Scripts\python.exe -m jesse seed             # re-apply protected identity facts
-.venv\Scripts\python.exe -m jesse learn <name> <path> | --list | --ask "..."
-.venv\Scripts\python.exe -m jesse digest [--fetch]
-.venv\Scripts\python.exe -m jesse pair [--ip]      # phone link + QR (remote paused)
-.venv\Scripts\python.exe -m jesse say "text" | devices | calibrate
+.venv\Scripts\python.exe -m pinkman memory [--forget "..."] [--dedupe [--apply]]
+.venv\Scripts\python.exe -m pinkman seed             # re-apply protected identity facts
+.venv\Scripts\python.exe -m pinkman learn <name> <path> | --list | --ask "..."
+.venv\Scripts\python.exe -m pinkman digest [--fetch]
+.venv\Scripts\python.exe -m pinkman pair [--ip]      # phone link + QR (remote paused)
+.venv\Scripts\python.exe -m pinkman say "text" | devices | calibrate
 ```
 
 > Use the venv Python explicitly. Bare `python` is system Python and lacks the deps;
-> `jesse` detects this and says so.
+> `pinkman` detects this and says so.
 
 **Landmine:** openWakeWord models are a **runtime download**, not a pip dependency.
 Rebuild the venv and they vanish — every smoke scenario fails with "could not load wake
@@ -332,15 +332,15 @@ model". Fix: `python -c "import openwakeword.utils as u; u.download_models()"`.
   filler in 4 of 10. **Every strengthening of the honesty rule has cost conversational
   substance** — on a 3B that tension looks structural, not one prompt pass away. Tune
   against real transcripts rather than another prompt rewrite.
-- **Only one Jesse at a time.** Two copies fight over the microphone and the second
+- **Only one Pinkman at a time.** Two copies fight over the microphone and the second
   hears almost nothing; it presents as calibration failing for no reason.
-  `data/jesse.pid` names the clash at startup.
+  `data/pinkman.pid` names the clash at startup.
 - **Remote never driven from a real handset.** Covered by smoke over real HTTP; iOS
   Safari may reject the self-signed certificate until installed as a profile. Paused
   anyway.
 - **Remote barge-in impossible on speakerphone** — the page mutes the mic while he
   talks and cannot tell whether headphones are plugged in.
-- **Whisper mangles the wake word unpredictably** ("Heeshak", "Stay Jarvis"). One-word
+- **Whisper mangles the wake word unpredictably** ("Heeshak", "Stay Pinkman"). One-word
   commands ("skip", "resume") are the weak spot; two-word forms are reliable.
 
 ---
@@ -365,8 +365,8 @@ his own voice clone and phone calls. `RELEASE.md` replaces the old subjective
 percentage estimates with explicit acceptance gates. Core features work, but
 trained custom assets, live local acceptance and phone integration are unfinished.
 
-**Next:** collect the reviewed voice pilot with `jesse voice-record` and provision
-the separate GPU training environment for `yo Jesse` and Piper. The user supplied
+**Next:** collect the reviewed voice pilot with `pinkman voice-record` and provision
+the separate GPU training environment for `yo Pinkman` and Piper. The user supplied
 the voice brief (§23) but has not recorded samples here. Then evaluate/audition the
 exports locally, validate normal conversation, and complete phone echo/transport
 integration (§11). Voice authentication remains skipped by choice; GPU runtime
@@ -386,16 +386,16 @@ imperfect. Use the latest header/entry for current verification.
 
 ## 11. Phone number (Twilio) — in progress
 
-Unparked 2026-09-20. Goal: call a real number and talk to Jesse through the existing
+Unparked 2026-09-20. Goal: call a real number and talk to Pinkman through the existing
 STT -> LLM -> TTS pipeline.
 
-**Done.** `jesse/remote/g711.py` — mu-law <-> PCM and 8k/16k either side of it, which
+**Done.** `pinkman/remote/g711.py` — mu-law <-> PCM and 8k/16k either side of it, which
 is the `audioop` landmine cleared (removed in 3.13; written out rather than pulling in
 `audioop-lts`). Real speech survives the leg intact for Whisper, SNR 20.3 dB, most of
 that the 4 kHz band limit every phone call has. 9 tests. Nothing calls it yet.
 
 **The seam it plugs into already exists.** `SwitchingTransport` + `RemoteSource`
-(`jesse/remote/transport.py`) were built for the phone-joins-mid-session case, take
+(`pinkman/remote/transport.py`) were built for the phone-joins-mid-session case, take
 16 kHz frames pushed in from a non-asyncio thread, and need no orchestrator changes.
 A Media Streams handler feeds them.
 
@@ -433,7 +433,7 @@ On a call, skip the wake word — the call *is* the wake.
 ## 12. Memory extraction follow-up — 2026-10-01
 
 The earlier memory smoke failure reproduced with the real model: a user stated the
-turquoise preference, Jesse's reply denied remembering it, and extraction of the
+turquoise preference, Pinkman's reply denied remembering it, and extraction of the
 combined exchange returned `[]`. Passing just the labelled user statement recovered
 the fact in three consecutive probes. A separate fact came back as malformed JSON;
 a conditional move was also wrongly accepted as a durable memory.
@@ -556,7 +556,7 @@ printed by calibration when checking a daily setup. A 60-second asyncio timeout
 bounds the capture/play exercise; model loading/synthesis happens beforehand and
 native blocking audio calls still depend on the driver returning.
 
-The command takes Jesse's existing instance claim, releases it on exit, closes
+The command takes Pinkman's existing instance claim, releases it on exit, closes
 capture on failures/cancellation and unmutes after playback. It retains only level
 and VAD statistics, never recorded audio, transcripts or memory. It changes neither
 calibration nor Windows volume. Missing frames or all-zero capture are inconclusive.
@@ -623,7 +623,7 @@ volumes, physical mic paths and full-duplex telephone echo remain unverified.
 pair can actually be reused without editing config:
 
 ```powershell
-.venv\Scripts\python.exe -m jesse run --ollama --device 1 --gain 14.8 --threshold 1004
+.venv\Scripts\python.exe -m pinkman run --ollama --device 1 --gain 14.8 --threshold 1004
 ```
 
 Either override selects manual mode, skipping auto-calibration; omitted values keep
@@ -674,7 +674,7 @@ An explicit `remember that ...` declaration (optionally prefixed with `please`)
 now receives "Got it. I'll try to remember that." directly in the shared voice/text
 handler. Both turns are persisted and the same background extractor runs; no extra
 generation or write path was added. This acknowledges receipt, not a completed
-durable write. Without a store or extractor, Jesse instead says lasting memory is
+durable write. Without a store or extractor, Pinkman instead says lasting memory is
 unavailable. Extraction failures remain unprocessed for the existing restart retry.
 
 The parser deliberately excludes question-ending utterances, `do you remember`,
@@ -789,7 +789,7 @@ Real-stack verification: 12/13 scenarios passed in 263s plus 6s warmup, includin
 the new alert recovery. The knowledge scenario failed because Whisper transcribed
 the one-word "Yes" follow-up as "Nes?", so the short-affirmation route did not fire.
 An unchanged targeted rerun passed in 26s plus 7s warmup: Whisper heard "Yes?" and
-Jesse answered "Ferrets sleep 14-18 hours a day, in short bursts." This is not a
+Pinkman answered "Ferrets sleep 14-18 hours a day, in short bursts." This is not a
 fully green single run and does not fix one-word recognition. The failed scenario
 also logged a spurious `coffee preference` extraction from the ambiguous exchange;
 that was investigated and guarded in §22. All databases here were
@@ -836,7 +836,7 @@ explicit turquoise preference. The ignored log is `data/smoke-extraction-guard.l
 User direction: finish the full vision, including custom wake and voice. Voice
 brief: American, about 21, charismatic; he will clone **his own voice**. Runtime
 integration is ready for exported assets via `run --wake-model FILE.onnx
---wake-phrase "yo Jesse" --wake-threshold 0.5 --voice en_US-jesse-medium`.
+--wake-phrase "yo Pinkman" --wake-threshold 0.5 --voice en_US-pinkman-medium`.
 The custom detector handles wake and interruption; the spoken phrase separately
 drives transcript cleanup. Custom exports load before capture/memory construction;
 bad exports produce a startup error and release the instance claim. Explicit voice
@@ -855,11 +855,11 @@ validated with the user. See `training/README.md` for the separate training work
 sampled recall, false activations/hour, threshold and model SHA-256. It requires
 20 positive clips and one hour negative audio before its sample gate can pass;
 human coverage and live echo/interruption acceptance remain separate. A real
-stock-asset probe loaded the explicit ONNX path and Ryan voice, detected synthetic
-"hey jarvis" at 0.998, did not fire on one negative, and correctly returned failure
-for insufficient evaluation coverage. This verifies tooling, not `yo Jesse` quality.
+stock-asset probe loaded the explicit ONNX path and the fallback voice, detected synthetic
+the former stock phrase at 0.998, did not fire on one negative, and correctly returned failure
+for insufficient evaluation coverage. This verifies tooling, not `yo Pinkman` quality.
 
-`Start-Jesse.cmd` uses the repo venv, real Ollama and local UI from any working
+`Start-Pinkman.cmd` uses the repo venv, real Ollama and local UI from any working
 directory. README now reflects the actual voice, CPU reasoning, energy VAD, model
 cache setup and active full-vision milestones. `RELEASE.md` is the finish checklist;
 the wake JSON is an overlay for the upstream training notebook, not a trained model.
@@ -878,7 +878,7 @@ in a paid plan or upload his own voice recordings. Colab's free GPU availability
 and session duration are not guaranteed. This machine has no installed WSL distro,
 only Python 3.13, and no usable training environment; no voice pilot files exist.
 
-Open **training/train_yo_jesse.ipynb** through the Colab link in training/README.md.
+Open **training/train_yo_pinkman.ipynb** through the Colab link in training/README.md.
 The notebook prepares a separate Python 3.10 venv, Torch 2.5.1/CUDA 12.1 and ORT
 GPU 1.20.2. It pins openWakeWord, the compatible dscripka Piper generator fork and
 public dataset revisions. No Drive mount, personal files or credentials are used.
@@ -901,13 +901,13 @@ an inference/hash report that explicitly leaves human acceptance false. Runtime
 defaults are unchanged. No new wake model has been trained or accepted.
 
 Notebook source is build_wake_notebook.py with tested wake_support.py helpers.
-Regenerate after changing either helper or yo_jesse.json; helper hashes account for
+Regenerate after changing either helper or yo_pinkman.json; helper hashes account for
 Windows line endings. All 596 tests passed in 6.75s, including 11 new training cases.
 Linux/Python 3.10 dependency resolution passed using uv in an ignored scratch
 directory; this is not an installation/import test on Linux. Notebook and embedded
 script syntax passed. An actual ORT inference/export-package smoke used the existing
-stock Jarvis asset in data/wake-training-source/stock-export-probe; its renamed test
-copy is NOT a trained Jesse model. No production asset was changed.
+stock wake asset in data/wake-training-source/stock-export-probe; its renamed test
+copy is NOT a trained Pinkman model. No production asset was changed.
 
 **Next:** first actual free Colab GPU run, repair any environment/runtime failures,
 download and evaluate the trained candidate locally. Own-voice recordings and
@@ -916,7 +916,7 @@ not significant: prepared training is not an acquired wake-word capability.
 
 All 14 real-stack smoke scenarios passed in 260s plus 11s warmup; log:
 data/smoke-wake-colab.log. This remains stock-asset runtime validation, not evidence
-of Colab execution or yo Jesse detection quality. Staged Git blob hashes match the
+of Colab execution or yo Pinkman detection quality. Staged Git blob hashes match the
 helper hashes embedded in the notebook.
 
 ## 25. OmniVoice own-voice auditions — 2026-10-07
@@ -931,12 +931,12 @@ OmniVoice source is in ignored data/OmniVoice at
 Python 3.13, Torch/torchaudio 2.8.0+cpu and Transformers 5.3.0. The full package
 freeze is in data/voice-clone/environment.txt. Public model/tokenizer weights are
 in data/omnivoice-model at revision c5fdb5ccb189668d56333f77ba2629f4cd7535f4.
-Nothing was installed into Jesse's existing runtime environment.
+Nothing was installed into Pinkman's existing runtime environment.
 
 Local Whisper transcription supplied word timestamps. A complete conversational
 excerpt (3.10–9.10s) and an expressive excerpt (37.10–46.50s) became separate
 reference WAV/transcript pairs. Both produced the same new test sentence:
-“Hey, it's Jesse. Good to hear from you. What are we working on today?”
+“Hey, it's Pinkman. Good to hear from you. What are we working on today?”
 Whisper recovered all intended words in both generated auditions.
 
 Actual CPU float32/32-step/four-thread measurements, including prompt encoding:
@@ -953,7 +953,7 @@ still needs OmniVoice. See training/OMNIVOICE.md and training/clone_omnivoice.py
 
 **Pending:** the user must judge likeness and choose an audition/reference.
 Then investigate a sufficiently fast local inference backend before changing
-Jesse's voice. Ryan remains the default, and the custom wake/phone milestones remain
+Pinkman's voice. the fallback voice remains the default, and the custom wake/phone milestones remain
 unfinished. Progress v2.0.16 is not significant because the live voice has not changed.
 The two actual offline OmniVoice generations plus transcription checks are this
 change's smoke verification; the core voice loop was not changed.
@@ -975,7 +975,7 @@ training/benchmark_omnivoice.py accepts a saved local voice prompt, runs entirel
 offline, retains the model across its requested step-count tests, keeps the audio
 codec on CPU, and moves the diffusion model to CUDA float32/float16. An experimental
 CPU mode dynamically quantizes only the language model's linear layers. It does not
-modify model files, select a voice, or change Jesse's runtime. Existing result
+modify model files, select a voice, or change Pinkman's runtime. Existing result
 directories are refused; completed results survive a subsequent inference error.
 
 Measured timings (cached conversational prompt, short greeting, four threads):
@@ -1013,12 +1013,12 @@ The GPU benchmark milestone was committed/pushed as 358ff57. There is now an
 explicit live backend option, --omnivoice-profile FILE.json. The local candidate
 profile is data/voice-clone/runtime-conversational.json: eight steps, CUDA fp16,
 the conversational prompt from §25. This is an experiment, not a user-approved
-voice selection. Default Piper/Ryan is unchanged. Do not upload the private
+voice selection. Default Piper/the fallback voice is unchanged. Do not upload the private
 profile, prompt, audio or transcripts. See training/OMNIVOICE.md for setup/launch.
 
-jesse/tts/omnivoice.py launches a persistent JSON-lines worker in the separate
+pinkman/tts/omnivoice.py launches a persistent JSON-lines worker in the separate
 GPU environment, using local model/prompt paths and offline flags. No service
-port and no torch dependency added to Jesse's main environment. The worker keeps
+port and no torch dependency added to Pinkman's main environment. The worker keeps
 the diffusion model on GPU and codec on CPU, returns mono 24kHz PCM with constant
 peak gain (same audible level as previews). A sentence finishes generating before
 chunk playback starts; this is not low-latency token-level audio streaming.
@@ -1060,7 +1060,7 @@ unchanged. Progress v2.0.18 is significant because the clone can join the live l
 
 Next: user likeness judgment and a timed live headset conversation with the opt-in
 profile. Consider retaining the model through cancellation to reduce the 21.5s
-recovery pause. Custom yo Jesse training is still only a prepared free-Colab
+recovery pause. Custom yo Pinkman training is still only a prepared free-Colab
 notebook, and phone-number integration remains unfinished. No paid compute or
 cloud upload of voice recordings has been authorized.
 
@@ -1183,12 +1183,12 @@ User said "great" after hearing steps-32-clean-profiled.wav, then "go ahead" to
 integration. The accepted settings are the untrimmed expressive reference, CUDA
 float32, 32 steps, seed 42 and preserved output pauses. The persistent worker now
 supports these settings. Private data/voice-clone/runtime-approved.json is also
-installed as default.json, so Start-Jesse.cmd and jesse run select this voice on
-this PC. Explicit --voice en_US-ryan-high selects the faster Piper voice. Other
+installed as default.json, so Start-Pinkman.cmd and pinkman run select this voice on
+this PC. Explicit --voice en_US-pinkman-fallback selects the faster Piper voice. Other
 installations without a private default continue to use Piper. Broken selected
 profiles fail clearly; there is no silent voice or CPU fallback.
 
-New jesse/tts/cleanup.py profiles a saved one-second noise-only excerpt from the
+New pinkman/tts/cleanup.py profiles a saved one-second noise-only excerpt from the
 approved take. It prepends 1.5s of calibration noise to each generated reply,
 applies the accepted FFmpeg afftdn settings, and removes the prefix plus the
 600-sample filter delay. Never profile the first second of NEW speech. Exact
@@ -1225,7 +1225,7 @@ ignored/local; no voice upload or new branch.
 
 Next: a normal wired-headset acceptance session and reducing the measured 24–27s
 generation delay while preserving the accepted sound. Do not claim natural live
-conversation is verified yet. Custom yo Jesse training still needs the authorized
+conversation is verified yet. Custom yo Pinkman training still needs the authorized
 free Colab run; phone transport/echo handling and real-call acceptance remain open.
 
 ## 32. Voice latency measured; faster cleaned auditions ready — 2026-10-11
@@ -1293,3 +1293,55 @@ measured generation for these short replies, still a noticeable wait.
 
 Next: coordinated wired-headset acceptance, then custom wake training and phone
 milestones. The faster voice is selected and tested; no further A/B approval needed.
+
+
+## 2026-10-12 — Pinkman identity, command center and manual wake
+
+The project is **Pinkman**, package `pinkman`, launcher `Start-Pinkman.cmd`,
+repository `urstrulymithilesh/pinkman`, workspace `D:\New folder\pinkman`.
+Main remains the only branch. Current source, tests, documentation, training
+filenames and generated Colab notebook use Pinkman. Historical Git objects and
+private recovery backups were retained; do not rewrite history to change branding.
+
+The user chose **Wake Pinkman** / **Interrupt** controls until a custom wake model
+is trained. Default detectors are inert; `run` starts the local UI automatically
+in manual mode. An explicit validated `--wake-model` and `--wake-phrase` still
+select an acoustic detector. No stock model is advertised as a trained Pinkman
+model. The phone page also has an authenticated manual wake button; reopen its
+pairing link after the new localStorage/header names. Its actual phone/headset
+acceptance remains outstanding.
+
+The command center shows actual starting/idle/listening/thinking/speaking/offline
+states, session restart handling, the configured voice/brain, shared transcript,
+quick prompts, responsive layout and reduced motion. Wake clears pre-click audio,
+and interruption uses the existing cancellation path. Local controls require a
+custom header and reject a different Origin; remote controls require the token.
+The local preview on port 8768 is labelled preview and does not use a microphone,
+model or production memory. The browser tool blocked the final preview inspection;
+pre-rename desktop/mobile UI verification and current HTTP/control tests passed.
+
+Memory was backed up locally before migration to `data/pinkman.db`. Updated
+identity references in 10 facts, one turn and eight episode summaries; re-embedded
+changed facts/subjects/episodes, reseeded current capabilities, integrity check OK.
+The approved 16-step voice profile, recording, reference prompt and noise cleanup
+remain private and unchanged. Optional Piper model/config use the neutral local
+alias `en_US-pinkman-fallback` (not an upstream catalogue download ID).
+
+Moved the whole project and repaired the three local Python environments: editable
+source paths, activation metadata and console entry points. Windows keeps the
+previous **empty** workspace directory locked while the desktop session references
+it. Open this new workspace in Codex, then remove the empty prior directory after
+its lock is released. No project files remain there.
+
+Validation: 646 tests passed after relocation (9.71s), all 14 real-engine smoke
+scenarios passed (171s), targeted control tests 56 passed, UI lint and diff check
+passed. The smoke suite now injects manual control events while running real VAD,
+Whisper, Ollama, Piper, SQLite and authenticated remote audio. It does not claim
+custom acoustic wake-model coverage. Logs remain under ignored `data/`.
+Relocated GPU voice verification completed: real 16-step speech generated twice
+with one worker (16.77s / 14.73s), interruption returned in 0.51s, recovery generated
+speech after worker restart (47.29s), and worker cleanup passed. Cold startup took
+121s on this run, substantially slower than the earlier warm measurements; do not
+advertise instant startup. Report: `data/voice-clone/pinkman-relocated-smoke/report.json`.
+This confirms runtime compatibility after relocation, not a new subjective voice
+approval. Final verification recorded 2026-10-14; no changes to the approved profile.

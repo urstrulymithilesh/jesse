@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from jesse.tts.omnivoice import OmniVoiceSynthesizer
+from pinkman.tts.omnivoice import OmniVoiceSynthesizer
 
 
 @pytest.fixture
@@ -40,13 +40,13 @@ for line in sys.stdin:
     popen = subprocess.Popen
     def launch(command, **kwargs):
         assert kwargs["env"]["HF_HUB_OFFLINE"] == "1"
-        assert "jesse.tts.omnivoice_worker" in command
+        assert "pinkman.tts.omnivoice_worker" in command
         assert command[command.index("--mode") + 1] == "cuda-fp32"
         assert command[command.index("--steps") + 1] == "32"
         assert "--keep-pauses" in command
         assert command[command.index("--seed") + 1] == "42"
         return popen([sys.executable, "-u", str(worker)], **kwargs)
-    monkeypatch.setattr("jesse.tts.omnivoice.subprocess.Popen", launch)
+    monkeypatch.setattr("pinkman.tts.omnivoice.subprocess.Popen", launch)
     synth = OmniVoiceSynthesizer(profile)
     yield synth
     synth.close()
@@ -94,8 +94,8 @@ def test_failed_request_reaps_worker_and_recovers(voice, text, match):
 @pytest.mark.parametrize("route", ["local", "remote"])
 @pytest.mark.parametrize("cancel_task", [False, True])
 def test_microphone_loop_can_interrupt_slow_generation(voice, monkeypatch, route, cancel_task):
-    from jesse.audio.transport import LocalAudioTransport
-    from jesse.remote.transport import RemoteSource, SwitchingTransport
+    from pinkman.audio.transport import LocalAudioTransport
+    from pinkman.remote.transport import RemoteSource, SwitchingTransport
     from tests.test_orchestrator import STOP, _build
 
     writes = []
@@ -110,7 +110,7 @@ def test_microphone_loop_can_interrupt_slow_generation(voice, monkeypatch, route
             pass
         def write(self, chunk):
             writes.append(chunk)
-    monkeypatch.setattr("jesse.audio.transport.sd.RawOutputStream", Output)
+    monkeypatch.setattr("pinkman.audio.transport.sd.RawOutputStream", Output)
 
     async def scenario():
         voice.start()

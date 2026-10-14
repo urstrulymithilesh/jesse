@@ -7,9 +7,9 @@ than invent a conversation for it.
 
 from datetime import datetime, timedelta
 
-from jesse.context import episode_context
-from jesse.memory.episodes import Episode, EpisodeStore, Summariser
-from jesse.memory.temporal import (TimeWindow, is_conversation_question,
+from pinkman.context import episode_context
+from pinkman.memory.episodes import Episode, EpisodeStore, Summariser
+from pinkman.memory.temporal import (TimeWindow, is_conversation_question,
                                   parse_temporal_query, parse_time_window)
 
 NOW = datetime(2026, 8, 22, 14, 0, 0)          # a Saturday, 2pm
@@ -142,7 +142,7 @@ def test_summariser_builds_a_transcript_and_returns_prose():
     assert out == llm.reply
     transcript = llm.seen[-1].content
     assert "Mithilesh: my car is light" in transcript
-    assert "Jesse: sounds nippy" in transcript
+    assert "Pinkman: sounds nippy" in transcript
 
 
 # -- the anchor (confabulation guard) ---------------------------------------

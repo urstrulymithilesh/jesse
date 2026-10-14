@@ -9,9 +9,9 @@ import asyncio
 
 import pytest
 
-from jesse.audio.frames import CHUNK_SAMPLES
-from jesse.remote.auth import RemoteAuth, load_or_create, token_from_request
-from jesse.remote.transport import RemoteSource, SwitchingTransport
+from pinkman.audio.frames import CHUNK_SAMPLES
+from pinkman.remote.auth import RemoteAuth, load_or_create, token_from_request
+from pinkman.remote.transport import RemoteSource, SwitchingTransport
 
 FRAME = b"\x01\x02" * CHUNK_SAMPLES
 
@@ -70,12 +70,12 @@ class _Headers(dict):
 
 
 def test_the_token_comes_from_the_header_or_the_first_link():
-    assert token_from_request(_Headers({"X-Jesse-Token": "abc"}), "/") == "abc"
+    assert token_from_request(_Headers({"X-Pinkman-Token": "abc"}), "/") == "abc"
     assert token_from_request(_Headers(), "/?t=xyz") == "xyz"
     assert token_from_request(_Headers(), "/?t=xyz&since=3") == "xyz"
     assert token_from_request(_Headers(), "/") is None
     # The header wins, so a stale link cannot override a live session.
-    assert token_from_request(_Headers({"X-Jesse-Token": "abc"}), "/?t=xyz") == "abc"
+    assert token_from_request(_Headers({"X-Pinkman-Token": "abc"}), "/?t=xyz") == "abc"
 
 
 # -- the audio seam ----------------------------------------------------------
@@ -134,7 +134,7 @@ def test_the_phone_takes_over_and_the_desk_mic_is_ignored():
     assert frames[0] == b"\x09\x09" * CHUNK_SAMPLES
 
 
-def test_jesses_reply_goes_to_the_phone_while_it_has_the_floor():
+def test_pinkmans_reply_goes_to_the_phone_while_it_has_the_floor():
     local = _FakeLocal()
     source = RemoteSource()
     source.submit(b"\x09\x09" * CHUNK_SAMPLES)
@@ -145,7 +145,7 @@ def test_jesses_reply_goes_to_the_phone_while_it_has_the_floor():
     assert source.take_reply() == (b"reply", 22050)
 
 
-def test_jesses_reply_goes_to_the_speakers_when_he_is_at_the_desk():
+def test_pinkmans_reply_goes_to_the_speakers_when_he_is_at_the_desk():
     local = _FakeLocal()
     t = SwitchingTransport(local, RemoteSource())
     asyncio.run(t.play(iter([b"reply"]), sample_rate=22050))
@@ -194,8 +194,8 @@ def test_calibration_reaches_the_real_microphone_through_the_wrapper():
 # -- confirming a side effect from the phone ---------------------------------
 
 
-from jesse.llm.echo import EchoLLM            # noqa: E402
-from jesse.orchestrator import Orchestrator   # noqa: E402
+from pinkman.llm.echo import EchoLLM            # noqa: E402
+from pinkman.orchestrator import Orchestrator   # noqa: E402
 
 
 class _Silence:
@@ -223,7 +223,7 @@ def _orch(remote_live: bool):
 def test_opening_something_from_the_phone_asks_first(monkeypatch):
     """Telephone-quality speech into the same deterministic parsers that already
     mishear at the desk, for the least reversible thing in the project."""
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
 
@@ -238,7 +238,7 @@ def test_opening_something_from_the_phone_asks_first(monkeypatch):
 
 
 def test_at_the_desk_it_just_opens(monkeypatch):
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
     orch = _orch(remote_live=False)
@@ -249,7 +249,7 @@ def test_at_the_desk_it_just_opens(monkeypatch):
 def test_an_unconfirmed_request_lapses(monkeypatch):
     """It must decay, not sit waiting to be triggered by an unrelated "sure" three
     turns later — the same failure the knowledge ask had."""
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
 
@@ -262,7 +262,7 @@ def test_an_unconfirmed_request_lapses(monkeypatch):
 
 def test_reading_and_searching_are_not_gated(monkeypatch):
     """Reversible or read-only, so they keep full parity over the phone."""
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
     monkeypatch.setattr(o, "find_files", lambda *a, **k: [])
     orch = _orch(remote_live=True)
     note = asyncio.run(orch._handle_action_command("find my tax notes"))
@@ -271,8 +271,8 @@ def test_reading_and_searching_are_not_gated(monkeypatch):
 
 def test_confirmation_can_be_turned_off(monkeypatch):
     from dataclasses import replace
-    import jesse.orchestrator as o
-    from jesse.config import CONFIG
+    import pinkman.orchestrator as o
+    from pinkman.config import CONFIG
 
     opened = []
     monkeypatch.setattr(o, "open_target", opened.append)
@@ -318,7 +318,7 @@ def test_the_page_surfaces_a_lost_connection():
     """A page that silently retries looks identical to one where nothing is wrong.
     Machine asleep, home internet down, laptop lid closed mid-sentence — all the same
     from the phone, and all worth saying out loud rather than showing a dead screen."""
-    from jesse.remote.page import PAGE
+    from pinkman.remote.page import PAGE
 
     assert "reachable(true)" in PAGE and "reachable(false)" in PAGE
     assert "can't reach him" in PAGE
@@ -332,28 +332,28 @@ def test_the_page_surfaces_a_lost_connection():
 def test_the_page_warns_when_it_cannot_get_the_microphone():
     """Browsers refuse getUserMedia on an insecure origin. A silent mic failure is the
     worst outcome, so the page says why and how to fix it."""
-    from jesse.remote.page import PAGE
+    from pinkman.remote.page import PAGE
 
     assert "isSecureContext" in PAGE
     assert "will not" in PAGE and "microphone" in PAGE
-    # It points at the fix that is actually in use — Jesse's own certificate, not
+    # It points at the fix that is actually in use — Pinkman's own certificate, not
     # `tailscale serve`, which was declined because it publishes the machine's
     # hostname to public Certificate Transparency logs.
     assert "--remote" in PAGE and "certificate" in PAGE
 
 
 def test_the_cli_module_actually_parses():
-    """`python -m jesse run --remote` shipped broken once: a mangled escape left an
+    """`python -m pinkman run --remote` shipped broken once: a mangled escape left an
     unterminated f-string in __main__.py, and the whole suite stayed green because
     nothing imports it. Compiling it is cheap and closes that hole."""
     import py_compile
     from pathlib import Path
 
     for module in ("__main__.py", "factory.py", "smoke.py"):
-        py_compile.compile(str(Path("jesse") / module), doraise=True)
+        py_compile.compile(str(Path("pinkman") / module), doraise=True)
 
 
-# -- one Jesse at a time ------------------------------------------------------
+# -- one Pinkman at a time ------------------------------------------------------
 
 
 def test_a_second_instance_is_named_not_left_as_a_symptom(tmp_path):
@@ -361,9 +361,9 @@ def test_a_second_instance_is_named_not_left_as_a_symptom(tmp_path):
     less. It presented as "calibration failed twice and fell back to defaults", which
     sent us reading the calibration code, which was fine."""
     import os
-    from jesse.core.single_instance import claim, release
+    from pinkman.core.single_instance import claim, release
 
-    pid_file = tmp_path / "jesse.pid"
+    pid_file = tmp_path / "pinkman.pid"
     assert claim(pid_file) is None                  # nobody else running
     assert pid_file.read_text().strip() == str(os.getpid())
 
@@ -379,17 +379,17 @@ def test_a_second_instance_is_named_not_left_as_a_symptom(tmp_path):
 
 def test_a_stale_pid_file_does_not_block_a_new_session(tmp_path):
     """A machine that lost power leaves the file behind; that must not lock his out."""
-    from jesse.core.single_instance import claim
+    from pinkman.core.single_instance import claim
 
-    pid_file = tmp_path / "jesse.pid"
+    pid_file = tmp_path / "pinkman.pid"
     pid_file.write_text("999999999", encoding="utf-8")   # long dead
     assert claim(pid_file) is None
 
 
 def test_releasing_only_removes_our_own_claim(tmp_path):
-    from jesse.core.single_instance import claim, release
+    from pinkman.core.single_instance import claim, release
 
-    pid_file = tmp_path / "jesse.pid"
+    pid_file = tmp_path / "pinkman.pid"
     claim(pid_file)
     pid_file.write_text("4242", encoding="utf-8")        # somebody else took over
     release(pid_file)
@@ -419,9 +419,9 @@ def test_lockout_reads_as_locked_not_as_a_wrong_token():
 
 def test_a_qr_is_produced_for_the_link():
     """Scanning cannot drop the ?t= tail; typing 43 characters can."""
-    from jesse.remote.tls import qr_lines
+    from pinkman.remote.tls import qr_lines
 
-    rows = qr_lines("https://jarvis.example.ts.net:8766/?t=abc123")
+    rows = qr_lines("https://pinkman.example.ts.net:8766/?t=abc123")
     assert rows and len(rows) > 8
     assert all(len(r) == len(rows[0]) for r in rows)     # square, not ragged
 
@@ -430,7 +430,7 @@ def test_the_qr_never_breaks_a_console_that_cannot_draw_it(monkeypatch):
     """A Windows console is cp1252 by default; printing block characters there raises,
     and a convenience must never be able to take down startup."""
     import io
-    from jesse.remote import tls
+    from pinkman.remote import tls
 
     monkeypatch.setattr(tls.sys, "stdout", io.TextIOWrapper(io.BytesIO(),
                                                             encoding="cp1252"))
@@ -445,10 +445,10 @@ def test_the_pairing_link_can_skip_dns(monkeypatch):
     dropped tunnel shows up as ERR_NAME_NOT_RESOLVED — which reads like a dead server
     rather than a disconnected VPN. The IP is in the certificate's SANs for exactly
     this reason, so an IP link is a complete fallback, not just a diagnostic."""
-    from jesse.remote import tls
+    from pinkman.remote import tls
 
     monkeypatch.setattr(tls, "tailscale_identity",
-                        lambda: (["jarvis.example.ts.net", "localhost"],
+                        lambda: (["pinkman.example.ts.net", "localhost"],
                                  ["127.0.0.1", "100.72.53.24"]))
     names, ips = tls.tailscale_identity()
     tailnet = [i for i in ips if i.startswith("100.")]
@@ -457,6 +457,6 @@ def test_the_pairing_link_can_skip_dns(monkeypatch):
 
 
 def qr_lines_ok(url):
-    from jesse.remote.tls import qr_lines
+    from pinkman.remote.tls import qr_lines
     rows = qr_lines(url)
     return bool(rows) and all(len(r) == len(rows[0]) for r in rows)

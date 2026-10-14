@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pytest
 
-from jesse.tts.cleanup import RATE, clean_pcm, load_noise_reference
+from pinkman.tts.cleanup import RATE, clean_pcm, load_noise_reference
 
 
 def test_cleanup_preserves_speech_from_first_sample_and_reduces_pause_noise():
@@ -49,7 +49,7 @@ def test_cleanup_reaps_failed_or_cancelled_subprocess(monkeypatch, action):
         processes.append(proc)
         launched.set()
         return proc
-    monkeypatch.setattr("jesse.tts.cleanup.subprocess.Popen", start)
+    monkeypatch.setattr("pinkman.tts.cleanup.subprocess.Popen", start)
     with ThreadPoolExecutor() as pool:
         job = pool.submit(clean_pcm, b"\0\0" * RATE, b"\0\0" * RATE, "ffmpeg",
                           cancelled=cancel.is_set, timeout=.2 if action == "timeout" else 10)

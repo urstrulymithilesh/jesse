@@ -2,7 +2,7 @@ import wave
 
 import pytest
 
-from jesse.wake_check import evaluate_clip, read_clip, summarize
+from pinkman.wake_check import evaluate_clip, read_clip, summarize
 
 
 def test_evaluation_warms_and_resets_and_counts_events_instead_of_frames():

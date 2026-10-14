@@ -5,8 +5,8 @@ when the newest entry was a REAL capability change (significant=True); otherwise
 reports being about the same.
 """
 
-from jesse.context import self_state_context
-from jesse.memory.progress import (
+from pinkman.context import self_state_context
+from pinkman.memory.progress import (
     PROGRESS_LOG,
     ProgressEntry,
     latest,
@@ -82,7 +82,7 @@ def test_self_state_invites_offering_the_reason():
 
 
 def test_asks_about_self_detects_state_questions():
-    from jesse.orchestrator import _asks_about_self
+    from pinkman.orchestrator import _asks_about_self
     for q in ["how are you feeling?", "how are you?", "what can you do",
               "what's your current version", "who are you", "how were you before"]:
         assert _asks_about_self(q), q
@@ -91,7 +91,7 @@ def test_asks_about_self_detects_state_questions():
 
 
 def test_asks_what_next_detects_next_step_questions():
-    from jesse.orchestrator import _asks_what_next
+    from pinkman.orchestrator import _asks_what_next
     for q in ["what should I do next?", "what's next", "what should I work on",
               "where do I start"]:
         assert _asks_what_next(q), q
@@ -100,7 +100,7 @@ def test_asks_what_next_detects_next_step_questions():
 
 
 def test_next_step_nudge_forbids_listing_options():
-    from jesse.context import next_step_nudge
+    from pinkman.context import next_step_nudge
     c = next_step_nudge().content
     assert "boss" in c and "not list" in c.lower()
 

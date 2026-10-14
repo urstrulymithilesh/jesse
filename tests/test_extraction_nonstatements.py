@@ -4,9 +4,9 @@ import asyncio
 
 import pytest
 
-from jesse.core.interfaces import Message
-from jesse.memory.extraction import FactExtractor
-from jesse.memory.store import SqliteMemoryStore
+from pinkman.core.interfaces import Message
+from pinkman.memory.extraction import FactExtractor
+from pinkman.memory.store import SqliteMemoryStore
 from tests.test_memory import FakeEmbedder
 from tests.test_orchestrator import _build_mem
 

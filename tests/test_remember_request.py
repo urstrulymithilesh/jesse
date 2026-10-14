@@ -5,10 +5,10 @@ import asyncio
 import pytest
 
 from tests.test_orchestrator import _build_mem, RecordingLLM
-from jesse.memory.extraction import FactExtractor
-from jesse.memory.remember_parse import parse_remember_request
-from jesse.core.state import ConversationState
-from jesse.ui.channel import TextChannel
+from pinkman.memory.extraction import FactExtractor
+from pinkman.memory.remember_parse import parse_remember_request
+from pinkman.core.state import ConversationState
+from pinkman.ui.channel import TextChannel
 
 
 @pytest.mark.parametrize("via", ["voice", "text"])
@@ -36,7 +36,7 @@ def test_memory_request_acknowledges_user_and_keeps_background_extraction(via):
     assert store.facts[0].text == "the user likes turquoise best"
     assert [m.role for m in store.turns] == ["user", "assistant"]
     assert orch.state is ConversationState.LISTENING
-    assert [line.role for line in orch.text_channel.transcript] == ["you", "jesse"]
+    assert [line.role for line in orch.text_channel.transcript] == ["you", "pinkman"]
     assert orch.text_channel.transcript[-1].text == transport.spoken[-1]
 
 

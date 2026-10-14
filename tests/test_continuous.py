@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import asyncio
 
-from jesse.core.state import ConversationState
-from jesse.orchestrator import Orchestrator, _asks_to_go_quiet
+from pinkman.core.state import ConversationState
+from pinkman.orchestrator import Orchestrator, _asks_to_go_quiet
 
 from tests.test_orchestrator import (END, SPEECH, STOP, WAKE, FakeTransport, FakeVad,
                                      FakeWake, TextSynth)

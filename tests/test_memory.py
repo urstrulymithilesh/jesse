@@ -5,9 +5,9 @@ in-memory (or tmp-file) SQLite — no fastembed model, no mic, no LLM.
 
 import zlib
 
-from jesse.core.interfaces import Fact, Message
-from jesse.memory.extraction import parse_extracted_facts
-from jesse.memory.store import SqliteMemoryStore
+from pinkman.core.interfaces import Fact, Message
+from pinkman.memory.extraction import parse_extracted_facts
+from pinkman.memory.store import SqliteMemoryStore
 
 
 IDENTITY_DIMS = 16
@@ -176,7 +176,7 @@ def test_parse_tolerates_code_fence():
 
 
 def test_parse_drops_his_own_speech_and_questions():
-    """Live db junk: three of nine learned facts were Jesse's own lines, filed as facts
+    """Live db junk: three of nine learned facts were Pinkman's own lines, filed as facts
     about him. The prompt already forbids it; the model does it anyway."""
     raw = ("[{\"subject\":\"practicing\",\"text\":\"I'll start practicing the Indian accent.\",\"confidence\":0.9},"
            "{\"subject\":\"mood\",\"text\":\"I'm energized, though.\",\"confidence\":0.6},"
@@ -212,15 +212,15 @@ def test_conversational_extraction_cannot_overwrite_a_core_fact():
 
 def test_seeding_can_update_a_protected_fact():
     s = _store()
-    s.add_fact(Fact(text="Jesse is at build v1", confidence=1.0, subject="self: version", origin="self"))
-    s.add_fact(Fact(text="Jesse is at build v2", confidence=1.0, subject="self: version", origin="self"))
+    s.add_fact(Fact(text="Pinkman is at build v1", confidence=1.0, subject="self: version", origin="self"))
+    s.add_fact(Fact(text="Pinkman is at build v2", confidence=1.0, subject="self: version", origin="self"))
     facts = s.all_facts()
     assert len(facts) == 1 and "v2" in facts[0].text  # seed origin updates itself
 
 
 def test_self_history_hidden_unless_explicitly_requested():
     s = _store()
-    s.add_fact(Fact(text="Jesse used to sound robotic", confidence=1.0,
+    s.add_fact(Fact(text="Pinkman used to sound robotic", confidence=1.0,
                     subject="self-history: v0", origin="self_history"))
     assert s.recall("tell me about your old voice", k=3) == []          # hidden by default
     hits = s.recall("tell me about your old voice", k=3, include_history=True)
@@ -228,21 +228,21 @@ def test_self_history_hidden_unless_explicitly_requested():
 
 
 def test_seed_plants_protected_facts_and_is_idempotent():
-    from jesse.memory.seed import seed, seed_if_needed
+    from pinkman.memory.seed import seed, seed_if_needed
     s = _store()
     assert seed(s) > 0
-    assert any(f.origin == "core" and "Jesse" in f.text for f in s.all_facts())
+    assert any(f.origin == "core" and "Pinkman" in f.text for f in s.all_facts())
     assert seed_if_needed(s) == 0  # unchanged content -> no-op
 
 
 def test_edited_seed_content_reaches_an_already_seeded_db():
     """The old gate was "any core facts?", so editing seed.py did nothing to a live db.
     He kept calling himself a companion and naming a model he no longer ran on."""
-    from jesse.memory import seed as seed_mod
+    from pinkman.memory import seed as seed_mod
     s = _store()
     seed_mod.seed(s)
     original = seed_mod.CORE_FACTS[0]
-    seed_mod.CORE_FACTS[0] = Fact(subject=original.subject, text="the AI partner's name is Jesse, v2",
+    seed_mod.CORE_FACTS[0] = Fact(subject=original.subject, text="the AI partner's name is Pinkman, v2",
                                   confidence=1.0, origin="core")
     try:
         assert seed_mod.seed_if_needed(s) > 0
@@ -412,7 +412,7 @@ def test_forget_clears_the_subject_vector_too():
     assert left == 0
 
 
-# -- retroactive dedupe (jesse memory --dedupe) ------------------------------
+# -- retroactive dedupe (pinkman memory --dedupe) ------------------------------
 
 
 def test_dedupe_preview_finds_a_real_duplicate_and_changes_nothing():
@@ -459,13 +459,13 @@ def test_dedupe_never_merges_a_false_positive_pair():
 
 
 def test_two_seeded_facts_are_never_merged_into_each_other():
-    """The bug this rule exists for: "jesse's creator" and "jesse's name" score 0.885,
-    over the threshold, and seeding silently lost "jesse's name"."""
-    s = _dedupe_store([("jesse's creator", "jesse's name")])   # forced to look identical
-    s.add_fact(Fact(text="Jesse was created by Mithilesh", confidence=1.0,
-                    subject="jesse's creator", origin="core"))
-    s.add_fact(Fact(text="the AI partner's name is Jesse", confidence=1.0,
-                    subject="jesse's name", origin="core"))
+    """The bug this rule exists for: "pinkman's creator" and "pinkman's name" score 0.885,
+    over the threshold, and seeding silently lost "pinkman's name"."""
+    s = _dedupe_store([("pinkman's creator", "pinkman's name")])   # forced to look identical
+    s.add_fact(Fact(text="Pinkman was created by Mithilesh", confidence=1.0,
+                    subject="pinkman's creator", origin="core"))
+    s.add_fact(Fact(text="the AI partner's name is Pinkman", confidence=1.0,
+                    subject="pinkman's name", origin="core"))
 
     assert len(s.all_facts()) == 2, "two seeded facts must never collapse"
     assert s.duplicate_groups() == []
@@ -473,7 +473,7 @@ def test_two_seeded_facts_are_never_merged_into_each_other():
 
 
 def test_seeding_twice_keeps_every_seeded_fact():
-    from jesse.memory.seed import all_seed_facts, seed
+    from pinkman.memory.seed import all_seed_facts, seed
     s = _dedupe_store([])
     seed(s)
     seed(s)
@@ -493,17 +493,17 @@ def test_dedupe_backfills_subject_vectors_for_legacy_facts():
     assert s._conn.execute("SELECT COUNT(*) FROM subject_vectors").fetchone()[0] == 1
 
 
-def test_a_preference_jesse_states_can_never_become_a_stored_fact():
+def test_a_preference_pinkman_states_can_never_become_a_stored_fact():
     """The leak that matters is not him saying a taste out loud — it is that taste
     surviving as memory and being repeated back as true.
 
     Probed live: asked whether he likes pineapple on pizza he answers with a taste he
-    does not have, 8 times in 9, and no prompt wording fixed it. But "Jesse does not
+    does not have, 8 times in 9, and no prompt wording fixed it. But "Pinkman does not
     like pineapple on pizza" is third person and well formed, so the old filter would
     have stored it forever. Shutting that door makes the spoken slip harmless.
     """
-    raw = ('[{"subject":"pizza","text":"Jesse does not like pineapple on pizza","confidence":0.9},'
-           '{"subject":"food","text":"Jesse\'s favourite food is pizza","confidence":0.9},'
+    raw = ('[{"subject":"pizza","text":"Pinkman does not like pineapple on pizza","confidence":0.9},'
+           '{"subject":"food","text":"Pinkman\'s favourite food is pizza","confidence":0.9},'
            '{"subject":"food","text":"Nah.","confidence":0.9},'
            '{"subject":"birthday","text":"the user\'s birthday month is November","confidence":1.0}]')
     kept = parse_extracted_facts(raw)
@@ -512,7 +512,7 @@ def test_a_preference_jesse_states_can_never_become_a_stored_fact():
 
 def test_real_facts_are_not_caught_by_the_new_filters():
     """A filter that eats real facts is worse than the leak it prevents."""
-    from jesse.memory.extraction import _is_junk
+    from pinkman.memory.extraction import _is_junk
 
     for text in ("the user's sister is named Anya",
                  "the user works as a data analyst at a hospital",

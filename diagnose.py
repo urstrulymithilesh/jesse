@@ -1,4 +1,4 @@
-"""Jesse audio diagnostics — find where the wake->STT chain breaks.
+"""Pinkman audio diagnostics — find where the wake->STT chain breaks.
 
 Two commands:
 
@@ -11,23 +11,22 @@ Two commands:
 The live monitor shows, per 80ms frame, all in one line:
   * a VU meter of the mic level (RMS)   -> is audio arriving at all?
   * which device it opened               -> is it your headset or the built-in mic?
-  * the live 'hey_jarvis' wake score     -> is openWakeWord hearing you, just under threshold?
+  * the live 'hey_pinkman' wake score     -> is openWakeWord hearing you, just under threshold?
   * [SPEECH] when level clears the VAD threshold, and <<< WAKE when the word fires
 
 If the VU meter stays flat while you talk, it's the wrong device -> pick the right
-index and pass it to `python -m jesse run --device N`.
+index and pass it to `python -m pinkman run --device N`.
 """
 
 from __future__ import annotations
 
 import math
-import os
 import sys
 
 import numpy as np
 import sounddevice as sd
 
-from jesse.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
+from pinkman.audio.frames import CHUNK_SAMPLES, SAMPLE_RATE
 
 WAKE_THRESHOLD = 0.5
 
@@ -38,7 +37,7 @@ WAKE_THRESHOLD = 0.5
 
 
 def list_devices(inputs_only: bool = False) -> None:
-    from jesse.audio.devices import format_device_table
+    from pinkman.audio.devices import format_device_table
 
     title = "AUDIO INPUT DEVICES" if inputs_only else "AUDIO DEVICES  (cap = IN / OUT / IN+OUT)"
     print("=" * 94)
@@ -57,16 +56,13 @@ def list_devices(inputs_only: bool = False) -> None:
 
 
 def _wake_model_info() -> object:
-    import openwakeword
-    from openwakeword.model import Model
-
-    res_dir = os.path.join(os.path.dirname(openwakeword.__file__), "resources", "models")
-    onnx = os.path.join(res_dir, "hey_jarvis_v0.1.onnx")
-    print(f"  wake model : hey_jarvis")
-    print(f"  model file : {onnx}")
-    print(f"  file found : {os.path.isfile(onnx)}")
-    # inference_framework pinned to onnx (tflite runtime isn't installed on Windows)
-    model = Model(wakeword_models=["hey_jarvis"], inference_framework="onnx")
+    from pinkman.config import CONFIG
+    from pinkman.audio.wakeword import OpenWakeWordDetector
+    if not CONFIG.wake.model:
+        print("  wake       : manual button; no trained custom model selected")
+        return None
+    model = OpenWakeWordDetector(CONFIG.wake.model)
+    model._ensure()
     return model
 
 
@@ -76,7 +72,7 @@ def _vu(rms: float, width: int = 40, full_scale: float = 3000.0) -> str:
 
 
 def listen(device: int | None, threshold: float, gain: float = 1.0) -> None:
-    from jesse.audio.devices import DeviceError, format_device_table, validate_input_device
+    from pinkman.audio.devices import DeviceError, format_device_table, validate_input_device
 
     print("=" * 78)
     print(" LIVE MONITOR — talk into your mic; Ctrl-C to stop")
@@ -96,7 +92,7 @@ def listen(device: int | None, threshold: float, gain: float = 1.0) -> None:
 
     model = _wake_model_info()
     print("  " + "-" * 74)
-    print("  Say 'hey jarvis'. Watch the wake score spike toward 1.0.\n")
+    print("  Speak naturally to check the mic. Custom wake evaluation: pinkman wake-check.\n")
 
     peak_rms = 0.0
     peak_score = 0.0
@@ -116,8 +112,7 @@ def listen(device: int | None, threshold: float, gain: float = 1.0) -> None:
                 boosted = np.clip(samples.astype(np.float32) * gain, -32768, 32767)
                 samples = boosted.astype(np.int16)
             rms = float(np.sqrt(np.mean(samples.astype(np.float64) ** 2))) if samples.size else 0.0
-            scores = model.predict(samples)
-            score = float(scores.get("hey_jarvis", 0.0))
+            score = model.score(samples.tobytes()) if model is not None else 0.0
             peak_rms = max(peak_rms, rms)
             peak_score = max(peak_score, score)
 
@@ -130,7 +125,7 @@ def listen(device: int | None, threshold: float, gain: float = 1.0) -> None:
 
 
 def _parse_listen_args(args: list[str]) -> tuple[int | None, float, float]:
-    from jesse.config import CONFIG
+    from pinkman.config import CONFIG
 
     device: int | None = None
     threshold = CONFIG.audio.vad_threshold
@@ -149,8 +144,8 @@ def _parse_listen_args(args: list[str]) -> tuple[int | None, float, float]:
 
 
 def _calibrate(args: list[str]) -> None:
-    from jesse.audio.calibrate import calibrate
-    from jesse.audio.devices import DeviceError, validate_input_device
+    from pinkman.audio.calibrate import calibrate
+    from pinkman.audio.devices import DeviceError, validate_input_device
 
     device = int(args[0]) if args and args[0].lstrip("-").isdigit() else None
     try:
@@ -161,7 +156,7 @@ def _calibrate(args: list[str]) -> None:
         return
     print(f"\n  Confirm it works together:  python diagnose.py listen "
           f"{device if device is not None else ''} --gain {result.gain} --threshold {result.threshold}")
-    print("  Make permanent in jesse/config.py -> AudioConfig:")
+    print("  Make permanent in pinkman/config.py -> AudioConfig:")
     print(f"      capture_gain: float = {result.gain}")
     print(f"      vad_threshold: float = {result.threshold}")
 
@@ -170,11 +165,11 @@ def _echo(args: list[str]) -> int:
     import argparse
     import asyncio
 
-    from jesse.audio.echo_check import TEST_PHRASE, measure_echo, report
-    from jesse.audio.transport import LocalAudioTransport
-    from jesse.config import CONFIG
-    from jesse.core.single_instance import claim, release
-    from jesse.tts.piper import PiperSynthesizer
+    from pinkman.audio.echo_check import TEST_PHRASE, measure_echo, report
+    from pinkman.audio.transport import LocalAudioTransport
+    from pinkman.config import CONFIG
+    from pinkman.core.single_instance import claim, release
+    from pinkman.tts.piper import PiperSynthesizer
 
     def positive(value):
         number = float(value)
@@ -188,7 +183,7 @@ def _echo(args: list[str]) -> int:
     parser.add_argument("--gain", type=positive, default=CONFIG.audio.capture_gain)
     parser.add_argument("--threshold", type=positive, default=CONFIG.audio.vad_threshold)
     options = parser.parse_args(args)
-    pid_file = CONFIG.memory.db_path.parent / "jesse.pid"
+    pid_file = CONFIG.memory.db_path.parent / "pinkman.pid"
     clash = claim(pid_file)
     if clash:
         print(clash)

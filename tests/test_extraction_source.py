@@ -1,10 +1,10 @@
-"""Durable facts come from the user, regardless of Jesse's reply."""
+"""Durable facts come from the user, regardless of Pinkman's reply."""
 
 import asyncio
 
 import pytest
 
-from jesse.memory.extraction import FactExtractor
+from pinkman.memory.extraction import FactExtractor
 from tests.test_orchestrator import FakeExtractor, RecordingLLM, _mem_orch
 
 

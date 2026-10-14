@@ -15,7 +15,7 @@ from training.wake_support import (
 
 
 def test_notebook_matches_source_and_all_cells_and_embedded_scripts_compile():
-    saved = json.loads(Path("training/train_yo_jesse.ipynb").read_text(encoding="utf-8"))
+    saved = json.loads(Path("training/train_yo_pinkman.ipynb").read_text(encoding="utf-8"))
     assert saved == build_notebook(), "Regenerate the notebook after changing its inputs"
     scripts = []
     for cell in saved["cells"]:
@@ -47,11 +47,11 @@ def test_patch_refuses_changed_upstream_instead_of_silently_skipping():
         fix_boolean_defaults('default="False",')
 
 
-def test_configuration_uses_distinct_absolute_data_paths_and_jesse_phrase(tmp_path):
-    overlay = json.loads(Path("training/yo_jesse.json").read_text())
+def test_configuration_uses_distinct_absolute_data_paths_and_pinkman_phrase(tmp_path):
+    overlay = json.loads(Path("training/yo_pinkman.json").read_text())
     config = make_config({"max_negative_weight": 1500}, overlay, tmp_path,
                          tmp_path / "train.npy", tmp_path / "validation.npy")
-    assert config["target_phrase"] == ["yo Jesse"]
+    assert config["target_phrase"] == ["yo Pinkman"]
     assert config["max_negative_weight"] == 1500
     assert config["n_samples"] == 20000
     assert config["feature_data_files"]["ACAV100M_sample"] == str(tmp_path / "train.npy")
@@ -104,9 +104,9 @@ def test_export_rejects_invalid_scores_without_packaging(tmp_path, score):
 def test_export_bundle_records_model_hash_and_does_not_claim_acceptance(tmp_path):
     output = tmp_path / "output"
     output.mkdir()
-    model = output / "yo_jesse.onnx"
+    model = output / "yo_pinkman.onnx"
     model.write_bytes(b"fake model checked by fake session")
-    (tmp_path / "yo_jesse.yaml").write_text("target_phrase: [yo Jesse]")
+    (tmp_path / "yo_pinkman.yaml").write_text("target_phrase: [yo Pinkman]")
     (tmp_path / "environment.txt").write_text("torch==2.5.1")
     (tmp_path / "train.log").write_text("training log")
     bundle = package_model(tmp_path, session_factory(0.1))

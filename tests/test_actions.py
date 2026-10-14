@@ -5,9 +5,9 @@ The orchestrator wiring is covered at the end with fakes, the same way the sched
 
 import pytest
 
-from jesse.actions.parse import (FindCommand, MediaCommand, OpenCommand, UnknownTarget,
+from pinkman.actions.parse import (FindCommand, MediaCommand, OpenCommand, UnknownTarget,
                                 parse_action_command)
-from jesse.actions.run import find_files
+from pinkman.actions.run import find_files
 
 APPS = {"spotify": "spotify:", "chrome": "chrome", "downloads": r"C:\Users\x\Downloads"}
 
@@ -205,9 +205,9 @@ def test_find_files_survives_a_missing_root(tmp_path):
 
 import asyncio
 
-from jesse.actions.run import ActionError
-from jesse.llm.echo import EchoLLM
-from jesse.orchestrator import Orchestrator
+from pinkman.actions.run import ActionError
+from pinkman.llm.echo import EchoLLM
+from pinkman.orchestrator import Orchestrator
 
 
 class _Silence:
@@ -241,7 +241,7 @@ def _orch():
 
 
 def _note(text, monkeypatch, **patches):
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
     for name, fn in patches.items():
         monkeypatch.setattr(o, name, fn)
     return asyncio.run(_orch()._handle_action_command(text))

@@ -12,10 +12,10 @@ from __future__ import annotations
 import asyncio
 import time
 
-from jesse.core.interfaces import LLMError
-from jesse.core.state import ConversationState
-from jesse.orchestrator import Orchestrator
-from jesse.tts.sentences import split_complete_sentences
+from pinkman.core.interfaces import LLMError
+from pinkman.core.state import ConversationState
+from pinkman.orchestrator import Orchestrator
+from pinkman.tts.sentences import split_complete_sentences
 
 from tests.test_orchestrator import (END, SPEECH, STOP, WAKE, FakeTransport, FakeVad,
                                      FakeWake, TextSynth)
@@ -363,5 +363,5 @@ def test_each_sentence_is_printed_as_it_starts_playing(capsys):
     orch, _t = _orch(ScriptedLLM("First one. Second one."))
     asyncio.run(orch._think_and_speak([]))
     out = capsys.readouterr().out
-    assert 'jesse: "First one."' in out
-    assert 'jesse: "Second one."' in out
+    assert 'pinkman: "First one."' in out
+    assert 'pinkman: "Second one."' in out

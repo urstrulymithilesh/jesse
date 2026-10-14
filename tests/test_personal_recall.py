@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import pytest
 from types import SimpleNamespace
 
-from jesse.core.interfaces import Fact, Message
-from jesse.memory.recall import asks_personal_memory, apply_explicit_corrections
-from jesse.memory.store import SqliteMemoryStore
+from pinkman.core.interfaces import Fact, Message
+from pinkman.memory.recall import asks_personal_memory, apply_explicit_corrections
+from pinkman.memory.store import SqliteMemoryStore
 from tests.test_memory import FakeEmbedder
 from tests.test_orchestrator import _build_mem, RecordingLLM
 

@@ -1,0 +1,66 @@
+"""OpenWakeWordDetector — the v1 WakeWord impl.
+
+Stays live even during Pinkman's speech so a stop-word can barge in (Finding #3 of
+the eng review). A headset prevents self-trigger. The same class serves both the
+wake role (IDLE) and the stop role (SPEAKING); config decides which model each uses.
+
+First run downloads the pretrained melspectrogram + embedding models (one-time,
+online); after that it is fully offline. Until "yo Pinkman" is trained, the default
+is manual control. Custom models can be selected explicitly after validation.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+
+from pinkman.audio.frames import CHUNK_SAMPLES
+
+
+class ManualWakeDetector:
+    """No acoustic trigger while the custom model is awaiting training."""
+
+    def process(self, frame: bytes) -> bool:
+        return False
+
+    def reset(self) -> None:
+        pass
+
+
+class OpenWakeWordDetector:
+    def __init__(self, model_name: str, *, threshold: float = 0.5) -> None:
+        self._model_name = model_name
+        self._threshold = threshold
+        self._model = None  # lazy: don't pay load cost until first frame
+
+    def _ensure(self) -> None:
+        if self._model is not None:
+            return
+        try:
+            from openwakeword.model import Model
+        except ImportError as e:  # pragma: no cover - environment guard
+            raise RuntimeError("openwakeword not installed (pip install openwakeword)") from e
+        try:
+            # Pin onnx: the tflite runtime isn't installed on Windows, and letting
+            # openWakeWord discover that at load time emits a noisy fallback warning.
+            self._model = Model(wakeword_models=[self._model_name], inference_framework="onnx")
+        except Exception as e:
+            raise RuntimeError(
+                f"could not load wake model {self._model_name!r}. First-time setup may need:\n"
+                "    python -c \"import openwakeword.utils as u; u.download_models()\""
+            ) from e
+
+    def score(self, frame: bytes) -> float:
+        self._ensure()
+        assert self._model is not None
+        samples = np.frombuffer(frame, dtype=np.int16)
+        if len(samples) != CHUNK_SAMPLES:
+            return 0.0
+        scores = self._model.predict(samples)
+        return float(max(scores.values(), default=0.0))
+
+    def process(self, frame: bytes) -> bool:
+        return self.score(frame) >= self._threshold
+
+    def reset(self) -> None:
+        self._ensure()
+        self._model.reset()

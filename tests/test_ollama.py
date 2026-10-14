@@ -5,11 +5,11 @@ import json
 import urllib.error
 import pytest
 
-from jesse.config import CONFIG
-from jesse.core.interfaces import Message
-from jesse.core.interfaces import LLMError
-from jesse.llm.ollama import OllamaLLM
-from jesse.memory.extraction import FACT_SCHEMA, FactExtractor
+from pinkman.config import CONFIG
+from pinkman.core.interfaces import Message
+from pinkman.core.interfaces import LLMError
+from pinkman.llm.ollama import OllamaLLM
+from pinkman.memory.extraction import FACT_SCHEMA, FactExtractor
 
 
 def test_extraction_sends_schema_and_zero_temperature_without_affecting_chat(monkeypatch):
@@ -63,13 +63,13 @@ def test_probe_reports_start_ollama_first(monkeypatch, failure):
 
 
 def test_run_fails_before_claiming_mic_or_starting_ui(monkeypatch, capsys):
-    from jesse.__main__ import _run
+    from pinkman.__main__ import _run
     def fail(self):
         raise LLMError("Start Ollama first")
     def unexpected(*args, **kwargs):
         pytest.fail("startup continued after the failed preflight")
     monkeypatch.setattr(OllamaLLM, "check_available", fail)
-    monkeypatch.setattr("jesse.core.single_instance.claim", unexpected)
-    monkeypatch.setattr("jesse.factory.build_orchestrator", unexpected)
+    monkeypatch.setattr("pinkman.core.single_instance.claim", unexpected)
+    monkeypatch.setattr("pinkman.factory.build_orchestrator", unexpected)
     assert _run(["--ollama", "--ui"]) == 1
     assert "Start Ollama first" in capsys.readouterr().out

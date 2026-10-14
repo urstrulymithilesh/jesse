@@ -8,9 +8,9 @@ match, ask when several fit, say so when nothing does, never guess.
 
 import asyncio
 
-from jesse.core.interfaces import Fact
-from jesse.memory.forget_parse import ForgetCommand, parse_forget_command
-from jesse.memory.store import SqliteMemoryStore
+from pinkman.core.interfaces import Fact
+from pinkman.memory.forget_parse import ForgetCommand, parse_forget_command
+from pinkman.memory.store import SqliteMemoryStore
 
 from tests.test_memory import FakeEmbedder
 
@@ -78,7 +78,7 @@ class _Orch:
     """Just enough orchestrator to exercise _handle_forget_command."""
 
     def __init__(self, store):
-        from jesse.orchestrator import Orchestrator
+        from pinkman.orchestrator import Orchestrator
         self.store = store
         self._handle = Orchestrator._handle_forget_command.__get__(self)
 

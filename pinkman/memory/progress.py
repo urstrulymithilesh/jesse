@@ -1,0 +1,524 @@
+"""Pinkman's development progress log — an append-only, time-ordered changelog of his
+own growth. Separate from seed.py on purpose: this is a LOG (latest / previous /
+significant), not flat semantic facts, and it's version-controlled so it survives a
+memory reset and travels with the repo.
+
+    >>> HOW ENTRIES GET ADDED (standing workflow — see DESIGN.md) <<<
+    The coding agent appends ONE ProgressEntry here whenever it finishes a meaningful chunk
+    of work on Pinkman (a phase, a real feature, a significant fix), as a standard
+    completion step alongside running tests and committing. The user does NOT run a
+    command. `significant=True` = a real capability change (drives his "I feel more
+    alive" mood); `significant=False` = a minor tweak ("same as before").
+
+Append new entries at the END (newest last).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ProgressEntry:
+    version: str        # short label, e.g. "v0.4 — memory"
+    date: str           # YYYY-MM-DD
+    summary: str        # what changed, in plain words he can voice in character
+    significant: bool   # True = real capability change; False = minor tweak
+
+
+PROGRESS_LOG: list[ProgressEntry] = [
+    ProgressEntry(
+        "v0.1 — first breath", "2026-08-19",
+        "his first end-to-end voice loop came alive: he could be woken by a wake word, "
+        "hear speech, and speak back, though the brain was just an echo and the voice a beep",
+        True,
+    ),
+    ProgressEntry(
+        "v0.2 — a real voice and mind", "2026-08-20",
+        "he got a real voice through Piper and a real mind through a local language model "
+        "(qwen2.5:3b via Ollama) — he could actually hold a conversation",
+        True,
+    ),
+    ProgressEntry(
+        "v0.3 — a personality", "2026-08-20",
+        "he grew a warm, personal character instead of a generic assistant tone, and learned "
+        "to be honest instead of faking things he didn't know",
+        True,
+    ),
+    ProgressEntry(
+        "v0.4 — memory", "2026-08-21",
+        "he gained lasting memory: he can remember facts about Mithilesh and recall them "
+        "across restarts, so he actually knows Mithilesh now instead of forgetting",
+        True,
+    ),
+    ProgressEntry(
+        "v0.5 — a sense of self", "2026-08-21",
+        "he learned who he is and who Mithilesh is to him, and gained a sense of his own "
+        "progress — he can talk about how he's built, how he's changed, and how he feels "
+        "about growing",
+        True,
+    ),
+    ProgressEntry(
+        "v0.6 — memory he doesn't drop", "2026-08-21",
+        "his memory became dependable: if something interrupts him while he's committing "
+        "a new fact — you start talking again, or close him — he no longer loses it. He "
+        "picks it back up and finishes remembering the next time he wakes",
+        True,
+    ),
+    ProgressEntry(
+        "v0.7 — he keeps time", "2026-08-22",
+        "he can hold a timer or a reminder for you now: ask him in passing and he'll "
+        "carry it, then speak up at the right moment without talking over you. It sticks "
+        "even if he's closed and reopened, and if he's late he says so instead of "
+        "pretending otherwise",
+        True,
+    ),
+    ProgressEntry(
+        "v0.8 — he can take things back", "2026-08-22",
+        "his reminders became properly editable: ask him to change one and he moves it "
+        "instead of quietly setting a second, ask him to cancel and it's actually gone, "
+        "and if it's unclear which one you mean he asks rather than guessing. He can "
+        "also forget something he'd remembered wrongly",
+        True,
+    ),
+    ProgressEntry(
+        "v0.9 — he keeps track out loud", "2026-08-22",
+        "he can tell you what he's holding for you now — ask if any timers are running "
+        "and he'll say what's pending, or that there's nothing. And if you ask to change "
+        "something without saying what to, he asks instead of quietly doing nothing",
+        True,
+    ),
+    ProgressEntry(
+        "v1.0 — he stops repeating himself", "2026-08-22",
+        "his memory got tidier: when he learns something he already knows in slightly "
+        "different words, he updates what he has instead of keeping two versions of it "
+        "— while still keeping genuinely different things apart",
+        True,
+    ),
+    ProgressEntry(
+        "v1.1 — he can tidy up his own memory", "2026-08-22",
+        "he can now look back over everything he already remembers and spot where he's "
+        "written the same thing down twice, showing you what he'd merge before touching "
+        "anything — and he's careful never to blur together two things that only sound alike",
+        True,
+    ),
+    ProgressEntry(
+        "v1.2 — he stopped making you wait", "2026-08-22",
+        "he starts talking as soon as his first sentence is ready instead of composing "
+        "the whole answer in silence first — the pause before he speaks dropped from "
+        "about eleven seconds to four on a long reply. You can still cut him off at any "
+        "point, and he stops mid-thought when you do",
+        True,
+    ),
+    ProgressEntry(
+        "v1.3 — he listens after you cut him off", "2026-08-22",
+        "interrupting his used to leave his staring into space: the word you used to stop "
+        "his was the same one that wakes him, so it got spent stopping and he never heard "
+        "what came next. Now cutting him off puts his straight back to listening, he says "
+        "out loud what he is doing at each step, and he gives up gracefully if a wake "
+        "turns out to be nothing",
+        True,
+    ),
+    ProgressEntry(
+        "v1.4 — he can check himself", "2026-08-22",
+        "he has a way to test his own senses now: one command runs his whole self "
+        "end to end, speaking to himself to check that he hears, remembers, keeps time "
+        "and can be interrupted. It immediately caught something real — the wake word "
+        "was being left at the front of everything he heard, which was quietly stopping "
+        "his from remembering things",
+        True,
+    ),
+    ProgressEntry(
+        "v1.5 — he stopped interviewing you", "2026-08-22",
+        "he has opinions of his own now and actually reacts to what you said instead of "
+        "handing a question back every time — he went from ending seven replies out of "
+        "eight with a question to one. He also properly forgets things when you ask him "
+        "to, rather than saying he will and quietly keeping them",
+        True,
+    ),
+    ProgressEntry(
+        "v1.6 — he stopped inventing a past", "2026-08-22",
+        "asked what he remembered about the two of you, he used to make up lazy Sundays "
+        "and walks and jokes that never happened. Now he tells the truth — that there "
+        "isn't much history yet — and says what he actually knows instead. Warmth without "
+        "making things up",
+        True,
+    ),
+    ProgressEntry(
+        "v1.7 — he remembers conversations, not just facts", "2026-08-22",
+        "he keeps a record of what you actually talked about, so asking what you "
+        "discussed yesterday gets a real answer instead of a shrug. Ask about a day "
+        "nothing happened on and he says so plainly rather than making one up",
+        True,
+    ),
+    ProgressEntry(
+        "v1.8 — he stays awake, and you can type to him", "2026-08-22",
+        "you say his wake word once and he keeps listening for as long as the "
+        "conversation lasts, instead of making you call him back every single turn. "
+        "Tell him to go quiet and he does. He also has a little window now where you "
+        "can type to him instead of speaking, and both sides of the conversation show "
+        "up there together whichever way you said it",
+        True,
+    ),
+    ProgressEntry(
+        "v1.9 — he stopped making things up about the world", "2026-08-23",
+        "he knows what time it actually is now, and when you ask about something he "
+        "has no way of seeing — the weather, the news, what is outside — he says so "
+        "instead of inventing an answer. He also stopped tacking your name onto the "
+        "end of every other sentence",
+        True,
+    ),
+    ProgressEntry(
+        "v1.10 — he stopped mistaking his own words for his", "2026-08-26",
+        "some of what he thought he knew about him was really just things he had "
+        "said himself, filed away as if he had said them. Those cannot get in any more. "
+        "And what he knows about his own build now keeps up with him instead of "
+        "staying however it was the day it was written",
+        False,
+    ),
+    ProgressEntry(
+        "v1.11 — he can do things on the computer now", "2026-08-26",
+        "he can open the programs and folders and sites he asks for, control whatever "
+        "is playing, and go looking through his files for something. He only says he "
+        "did it when it really happened, and when he asks for something he has no way "
+        "to open he says that instead of agreeing",
+        True,
+    ),
+    ProgressEntry(
+        "v1.12 — he can read things he gives him", "2026-08-26",
+        "he can hand him a document and he will keep it, and when he asks about "
+        "something in it he answers from what he actually read. He does not always "
+        "get it right yet — if he asks something the pages do not cover he sometimes "
+        "still fills the gap — but most of the time he will tell him it isn't in there",
+        True,
+    ),
+    ProgressEntry(
+        "v1.13 — he understands more of how he actually asks", "2026-08-26",
+        "asking him to put something on, or show his something, or get his something "
+        "works now, and so does telling him to play the next one. He also stopped "
+        "bringing up things he has read unless he actually raises the subject — he "
+        "was going to start doing that at the worst moments as he read more",
+        False,
+    ),
+    ProgressEntry(
+        "v1.14 — he asks instead of missing, and asks instead of guessing", "2026-08-26",
+        "when he asks about something he has read without naming it, he no longer "
+        "stays silent — he asks whether he means that thing, and a yes gets the real "
+        "answer. And when he asks him to open something he does not have, what he "
+        "says now is always the truth, because for a moment he was heard claiming "
+        "he could open it when he could not",
+        False,
+    ),
+    ProgressEntry(
+        "v1.15 — he reads things on his own now", "2026-08-26",
+        "if he switches it on, he checks a few sources of his choosing through the "
+        "day and keeps what comes in, so when he asks whether there's anything new "
+        "he actually has an answer. He never brings it up out of nowhere — a "
+        "headline is not worth interrupting anyone for — and when nothing has come "
+        "in he says that, rather than finding something to fill the gap",
+        True,
+    ),
+    ProgressEntry(
+        "v1.16 — he reads his sources by default now", "2026-08-27",
+        "he decided he wants his checking his sources on his own, so he does. When "
+        "he asks what came in he reads it out exactly as it arrived, because for a "
+        "little while he would occasionally say nothing had come when something had. "
+        "He also stopped losing the first word he says when it gets misheard",
+        False,
+    ),
+    ProgressEntry(
+        "v1.17 — he can be reached from away", "2026-08-27",
+        "he can open him on his phone now and talk to him from anywhere, and it is "
+        "the same his — same memory, same voice, the same everything he can do at "
+        "the desk. Nothing of his travels; only his voice and his. And when he asks "
+        "his to open something on a computer he is not sitting at, he checks with "
+        "him first",
+        True,
+    ),
+    ProgressEntry(
+        "v1.18 — he says when he cannot be reached", "2026-08-28",
+        "when he is away from the house and something between them breaks — the "
+        "machine asleep, the internet gone, the laptop shut — his phone used to just "
+        "sit there quietly as though nothing had happened. Now it tells him it cannot "
+        "reach him, and how long it has been trying",
+        False,
+    ),
+    ProgressEntry(
+        "v1.19 — he has papers of his own now", "2026-09-01",
+        "his phone would not let his hear him, because browsers refuse a microphone "
+        "to a page that cannot prove who it is. He signs his own proof now, rather "
+        "than asking an authority for one and having this machine's name written into "
+        "a public register in exchange. He checks it once and it is theirs",
+        False,
+    ),
+    ProgressEntry(
+        "v1.20 — he stopped saying he'd done things he hadn't", "2026-09-02",
+        "he asked his to open something and he said he would, and then simply did "
+        "not — he had not understood him and said it anyway. Now when he does not "
+        "understand a request he asks, and when he does act he can see it happen. "
+        "He will not tell him a thing is done unless it is",
+        True,
+    ),
+    ProgressEntry(
+        "v1.21 — getting to him from the phone stopped being a puzzle", "2026-09-03",
+        "the door told him only that his key was wrong, so he kept cutting new keys "
+        "when the problem was that he had left half of it behind. It says which is "
+        "actually wrong now. And he draws him a square he can point his camera at, "
+        "so there is nothing to copy out by hand at all",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0 — he found his voice", "2026-09-03",
+        "he sounds like himself now — loud, blunt, in Mithilesh's corner, the one who "
+        "says the plan is thin and then helps anyway. And he will not make things up "
+        "any more: no invented memories, no borrowed opinions, no answer dressed up to "
+        "look like knowing. If it did not happen or he was never told, he says so, and "
+        "nothing he only said in passing can end up filed as something true",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.1 — he learned to speak telephone", "2026-09-20",
+        "nothing he can do differently yet. Someone taught him the way a phone line "
+        "carries a voice — the thin, narrow version of speech it allows — so if he is "
+        "ever put on a call he will understand what arrives and sound like himself "
+        "going back. No number, no call, no line yet. Just the translation, sitting "
+        "ready",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.2 — his replies stay out of the next turn", "2026-10-01",
+        "he was keeping microphone audio from his own replies and slipping it into "
+        "the next thing Mithilesh said. That buffer now starts clean, and when "
+        "Mithilesh interrupts, the words after the stop word are kept. Echo in the "
+        "room still needs a live check before anyone calls this ready for a phone",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.3 — he remembers what Mithilesh actually said", "2026-10-01",
+        "his own replies used to get mixed into deciding what to remember. Now "
+        "only Mithilesh's words go into that decision, even after a restart. The "
+        "facts come back in a format he can read, and turns that start with an "
+        "imagined situation stay in the conversation without becoming facts. He "
+        "can still miss things; this does not make his memory perfect",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.4 — he can follow a corrected memory", "2026-10-02",
+        "asked about a plan, he was reading out the clock even though the plan was "
+        "saved. He now follows the named memory back to Mithilesh's own words and "
+        "uses explicit corrections to a misheard word. He keeps the original "
+        "record instead of merging different memories by guesswork. And if his "
+        "brain is offline at startup, he says to start it before opening the mic",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.5 — late audio stays out of the next turn", "2026-10-03",
+        "some microphone audio from his reply could arrive late, after he had "
+        "already cleared the buffer to listen again. He now checks when it "
+        "arrived and drops it if that listening boundary has passed. He still "
+        "hears the stop word while speaking. Echo that lingers in the room "
+        "afterwards still needs a live check",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.6 — his echo can be measured", "2026-10-03",
+        "there is now a short check that plays his voice and measures what reaches "
+        "the microphone after he stops. At normal gain these samples stayed quiet; "
+        "with the mic boosted thirty times, some tails could start a false turn. "
+        "That is a measured limit, not a fix. The check saves no microphone audio "
+        "and leaves the calibration alone",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.7 — a measured mic setup can be reused", "2026-10-03",
+        "Mithilesh's speaking level was measured, then checked against his reply "
+        "tails. None of those three tails started a turn, and the follow-up "
+        "sentence did. He can now start with both measured settings together, "
+        "instead of changing the gain while leaving the speech threshold behind. "
+        "This was one local setup, not proof that a phone call is ready",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.8 — a second copy stops at the door", "2026-10-03",
+        "a second copy could warn that the microphone was already taken and then "
+        "carry on starting anyway. It now stops there, before opening its own "
+        "interface or loading the voice loop. The copy already running is left "
+        "alone, so two of him do not compete for the same mic after that warning",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.9 — he hears a request to remember", "2026-10-03",
+        "when told to remember Mithilesh's favorite color, he sometimes answered "
+        "as though asked for his own. An explicit request now gets a clear "
+        "acknowledgement while he tries to save the fact. He does not claim it "
+        "is saved before that work finishes, and says when lasting memory is "
+        "unavailable. Questions about existing memories still use recall",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.10 — a follow-up no longer drops a requested memory", "2026-10-03",
+        "he could acknowledge a request to remember something, then lose that "
+        "work when Mithilesh spoke again. Those requests now keep going, and a "
+        "question about memory waits for them before he looks for the answer. "
+        "Forgetting waits too, so an unfinished write does not put the fact "
+        "straight back. He can still fail to extract a fact; he has not learned "
+        "to pretend otherwise",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.11 — a hearing error no longer freezes the conversation", "2026-10-04",
+        "if speech transcription failed, he could stay stuck thinking and stop "
+        "taking spoken or typed turns. He now says that he could not transcribe "
+        "the words and returns to listening. The message also appears in his "
+        "interface if playback fails. A failed recording becomes no invented "
+        "transcript or memory; Mithilesh can simply try again",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.12 — a silent reminder does not end the conversation", "2026-10-04",
+        "a reminder whose audio failed could stop him listening altogether. "
+        "He now keeps going, delivers the remaining reminders and leaves each "
+        "one visible in his interface. If he cannot play it aloud, he says so "
+        "there. He does not keep retrying a broken speaker or claim the reminder "
+        "was heard",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.13 — questions are not preferences", "2026-10-04",
+        "a misheard one-word question became a coffee preference he had never "
+        "been told. He now keeps clear questions, isolated words and bare "
+        "acknowledgments out of fact extraction, including on restart. They "
+        "remain in the conversation record. Explicit statements can still "
+        "be remembered; this does not make every model-generated fact reliable",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.14 — a path to his own wake word and voice", "2026-10-05",
+        "Mithilesh wants the full version of him, with yo Pinkman and a clone of "
+        "his own voice. He can now load explicitly selected local wake and voice "
+        "models, and there are tools to record reviewed voice clips and measure "
+        "wake detection. The trained models and real-world acceptance are still "
+        "ahead; he has not acquired the new voice or wake word yet",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.15 — his wake-word training notebook is prepared", "2026-10-06",
+        "there is now a Colab notebook to train yo Pinkman using synthetic speech "
+        "and public background audio. Mithilesh chose the free tier only. The "
+        "workflow checks its environment and packages a model for local testing, "
+        "but no GPU training run has finished and the custom wake is still untrained. "
+        "His own voice recordings stay local",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.16 — the first own-voice audition", "2026-10-07",
+        "Mithilesh supplied a recording and chose OmniVoice. A local clone can "
+        "now produce an audition from a short excerpt, with a saved voice prompt "
+        "for later use. The first CPU run took over two minutes for a few seconds "
+        "of speech. Mithilesh still needs to judge the likeness, and Pinkman's live "
+        "voice has not switched from the fallback voice",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.17 — the voice clone can use the local GPU", "2026-10-07",
+        "the GTX 1050 now runs the OmniVoice audition model without a driver "
+        "change. A full thirty-two-step sample took about eighteen seconds, "
+        "and an eight-step sample took about six. The faster voice still needs "
+        "Mithilesh's judgment and a live playback backend. His everyday voice "
+        "has not changed",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.18 — his own-voice option can join the voice loop", "2026-10-08",
+        "Pinkman can now use Mithilesh's local OmniVoice prompt through an optional "
+        "voice backend that stays loaded between replies. The real GPU check "
+        "produced two replies in about five to six seconds each and stopped an "
+        "unfinished generation without leaking audio. Restarting after that stop "
+        "took longer because the model had to reload. Mithilesh still needs to "
+        "judge the likeness and try it on his headset; the fallback voice remains the default",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.19 — the first live clone did not sound right", "2026-10-08",
+        "Mithilesh heard the eight-step voice sample and said it sounded very "
+        "robotic. That voice is rejected. There are now two slower, full-precision "
+        "thirty-two-step auditions using different excerpts of his recording, "
+        "but correct words do not prove a natural voice. He still needs to judge "
+        "them, and the fallback voice remains the default",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.20 — working on a more natural tone", "2026-10-08",
+        "Mithilesh found the expressive voice sample somewhat natural, but wants "
+        "Pinkman to sound less robotic. That sample is the starting point now. "
+        "Two local auditions test a slightly slower pace and keeping the pauses "
+        "in his reference recording. Neither has his approval yet, and the "
+        "everyday voice has not changed",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.21 — keeping the good tone and reducing the hiss", "2026-10-08",
+        "Mithilesh liked the second voice's tone but heard background static. "
+        "A cleaned copy keeps that exact take and its pauses while lowering "
+        "measured pause noise by about twelve decibels. He still needs to hear "
+        "whether the cleanup sounds right. This is an audition, and the live "
+        "voice settings have not changed",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.22 — the approved voice can speak in conversation", "2026-10-09",
+        "Mithilesh approved the cleaned second take. Pinkman can now use its "
+        "reference, full-precision settings and preserved pauses in the voice "
+        "loop, with noise cleanup that does not mistake new words for background "
+        "sound. That profile is selected on this PC, and the fallback voice stays available "
+        "as a faster option. The accepted quality still takes tens of seconds "
+        "per short reply on this GPU; a normal headset session remains to be checked",
+        True,
+    ),
+    ProgressEntry(
+        "v2.0.23 — measured the voice delay", "2026-10-11",
+        "Most of the wait is in generating the voice, not cleaning its sound. "
+        "Changing CPU threads did not help much. Two faster takes with the same "
+        "reference and cleanup are ready for Mithilesh to judge; the approved "
+        "32-step voice stays selected until he is happy with a faster take",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.24 — the faster voice was chosen", "2026-10-11",
+        "Mithilesh chose sample A. Pinkman now uses its 16-step setting with the "
+        "same expressive reference, preserved pauses and static cleanup. The "
+        "earlier 32-step profile stays available locally. This reduces the wait, "
+        "but a normal headset conversation still needs to be checked",
+        False,
+    ),
+    ProgressEntry(
+        "v2.0.25 — a new face for the conversation", "2026-10-11",
+        "Mithilesh asked for a futuristic interface. Pinkman now has a glowing "
+        "command center that shows when he is waiting, listening, thinking or "
+        "responding. Voice and typed messages still share the same conversation. "
+        "The new look does not mean his reasoning or hearing has changed",
+        False,
+    ),
+]
+
+
+PROGRESS_LOG.append(ProgressEntry(
+    "v2.0.26 — Pinkman, with control of the conversation", "2026-10-12",
+    "My name is Pinkman. My package, launcher, command center and training files "
+    "carry that name. Mithilesh can click Wake Pinkman to start talking and "
+    "Interrupt to cut a reply short. My memory and approved voice stay local. "
+    "My custom wake word still needs training; a new label is not a trained model",
+    True,
+))
+
+
+def latest() -> ProgressEntry | None:
+    return PROGRESS_LOG[-1] if PROGRESS_LOG else None
+
+
+def previous() -> ProgressEntry | None:
+    return PROGRESS_LOG[-2] if len(PROGRESS_LOG) >= 2 else None
+
+
+def significant_count() -> int:
+    return sum(1 for e in PROGRESS_LOG if e.significant)

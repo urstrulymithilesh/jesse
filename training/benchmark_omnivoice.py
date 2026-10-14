@@ -1,4 +1,4 @@
-"""Compare local OmniVoice inference with a cached voice prompt; never change Jesse."""
+"""Compare local OmniVoice inference with a cached voice prompt; never change Pinkman."""
 
 import argparse
 import json
@@ -25,7 +25,7 @@ def main(argv=None):
     parser.add_argument("--keep-pauses", action="store_true",
                         help="Disable generated-audio silence removal for a pacing comparison")
     parser.add_argument("--model", type=Path, default=ROOT / "data/omnivoice-model")
-    parser.add_argument("--text", default="Hey, it's Jesse. Good to hear from you. "
+    parser.add_argument("--text", default="Hey, it's Pinkman. Good to hear from you. "
                         "What are we working on today?")
     args = parser.parse_args(argv)
     if args.threads < 1 or any(not 1 <= step <= 64 for step in args.steps):

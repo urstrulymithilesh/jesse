@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from jesse.core.state import ConversationState
-from jesse.orchestrator import Orchestrator
+from pinkman.core.state import ConversationState
+from pinkman.orchestrator import Orchestrator
 from tests.test_orchestrator import (
     END, SPEECH, STOP, WAKE, FakeTransport, FakeVad, FakeWake,
     RecordingTranscriber, TextSynth,
@@ -32,7 +32,7 @@ def test_reply_audio_does_not_reach_the_followup_transcript(streamed, playback_f
 
     async def echoing_play(frames, *, sample_rate):
         for chunk in frames:
-            await orch._handle_frame(b"JESSE_ECHO:" + chunk)
+            await orch._handle_frame(b"PINKMAN_ECHO:" + chunk)
         if playback_fails:
             raise RuntimeError("speaker disconnected")
 
@@ -67,7 +67,7 @@ def test_barge_in_keeps_words_after_the_stop_word_but_not_earlier_echo():
 
     async def scenario():
         orch._enter(ConversationState.SPEAKING)
-        await orch._handle_frame(b"JESSE_ECHO")
+        await orch._handle_frame(b"PINKMAN_ECHO")
         await orch._handle_frame(STOP)
         await orch._handle_frame(b"USER_START")
         orch._finish_speaking()

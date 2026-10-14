@@ -1,7 +1,7 @@
 """Tests for build_messages — the strict read-budget assembler."""
 
-from jesse.context import build_messages
-from jesse.core.interfaces import Fact, Message
+from pinkman.context import build_messages
+from pinkman.core.interfaces import Fact, Message
 
 
 def test_persona_then_facts_then_turns_ending_on_current_message():

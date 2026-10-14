@@ -10,9 +10,9 @@ broad ones retrieve nothing and leave the model free-associating from the person
 Inventing intimacy is worse than getting a fact wrong, so the guard is deterministic.
 """
 
-from jesse.context import shared_history_context
-from jesse.core.interfaces import Fact
-from jesse.orchestrator import _asks_about_shared_history
+from pinkman.context import shared_history_context
+from pinkman.core.interfaces import Fact
+from pinkman.orchestrator import _asks_about_shared_history
 
 
 def test_detects_broad_questions_about_the_relationship():
@@ -58,9 +58,9 @@ def test_the_anchor_excludes_facts_about_his_own_build():
     facts = [
         Fact(text="the user's favourite colour is black", confidence=1.0,
              subject="colour", origin="conversation"),
-        Fact(text="Jesse runs on a local language model", confidence=1.0,
+        Fact(text="Pinkman runs on a local language model", confidence=1.0,
              subject="self: tech", origin="self"),
-        Fact(text="Jesse used to sound robotic", confidence=1.0,
+        Fact(text="Pinkman used to sound robotic", confidence=1.0,
              subject="self-history: v0", origin="self_history"),
     ]
     content = shared_history_context(facts).content

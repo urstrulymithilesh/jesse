@@ -6,8 +6,8 @@ import threading
 
 import pytest
 
-from jesse.core.state import ConversationState
-from jesse.memory.store import SqliteMemoryStore
+from pinkman.core.state import ConversationState
+from pinkman.memory.store import SqliteMemoryStore
 from tests.test_memory import FakeEmbedder
 from tests.test_orchestrator import _build_mem, RecordingLLM
 

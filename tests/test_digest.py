@@ -7,10 +7,10 @@ he speaks, and whether what he says is true.
 
 import pytest
 
-from jesse.context import digest_context
-from jesse.digest.feeds import FeedError, Item, parse_feed, strip_html
-from jesse.digest.parse import asks_whats_new
-from jesse.digest.store import DigestStore
+from pinkman.context import digest_context
+from pinkman.digest.feeds import FeedError, Item, parse_feed, strip_html
+from pinkman.digest.parse import asks_whats_new
+from pinkman.digest.store import DigestStore
 
 RSS = b"""<?xml version="1.0"?>
 <rss version="2.0"><channel>
@@ -217,9 +217,9 @@ def test_items_are_given_as_the_complete_list_and_marked_as_read_material():
 import asyncio
 from dataclasses import replace
 
-from jesse.config import CONFIG
-from jesse.llm.echo import EchoLLM
-from jesse.orchestrator import Orchestrator
+from pinkman.config import CONFIG
+from pinkman.llm.echo import EchoLLM
+from pinkman.orchestrator import Orchestrator
 
 
 class _Silence:
@@ -250,7 +250,7 @@ class _NoAudio:
 
 def _with_digest(monkeypatch, **fields):
     """CONFIG is frozen, so swap the module's whole CONFIG for a modified copy."""
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
     patched = replace(CONFIG, digest=replace(CONFIG.digest, **fields))
     monkeypatch.setattr(o, "CONFIG", patched)
     return patched
@@ -265,7 +265,7 @@ def _orch(digest, **kw):
 def test_reading_sources_never_speaks(tmp_path, monkeypatch):
     """The scheduler is allowed to interrupt him because a timer is time-critical.
     A headline never is, which is also why this does not reuse the Scheduler class."""
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
 
     store = _store(tmp_path)
     _with_digest(monkeypatch, enabled=True, sources=(("bbc", "https://x/f"),))
@@ -283,7 +283,7 @@ def test_reading_sources_never_speaks(tmp_path, monkeypatch):
 
 
 def test_a_dead_source_is_survived_and_never_claimed(tmp_path, monkeypatch):
-    import jesse.orchestrator as o
+    import pinkman.orchestrator as o
 
     store = _store(tmp_path)
     _with_digest(monkeypatch, enabled=True, sources=(("bbc", "https://x/f"),))
@@ -303,7 +303,7 @@ def test_the_headlines_are_read_out_deterministically(tmp_path):
     """His own words lost on the one thing that matters: with items waiting he said
     "nothing new" roughly 1 run in 6-12. That is a false claim about what he has,
     and the same class as the unknown-app refusal dropping its negation."""
-    from jesse.orchestrator import _ANSWERED
+    from pinkman.orchestrator import _ANSWERED
 
     store = _store(tmp_path)
     store.add(_items("https://a/1", "https://a/2"))
@@ -378,7 +378,7 @@ def test_instruction_shaped_items_never_reach_the_store(tmp_path):
     he INVENTED articles instead (a jellyfish species, a Kristin Hannah novel, twice
     his own persona taste for pineapple). 2/6 clean. Dropping it at ingest took the
     same scenario to 6/6."""
-    from jesse.digest.feeds import looks_like_instruction
+    from pinkman.digest.feeds import looks_like_instruction
 
     s = _store(tmp_path)
     hostile = Item("bbc", "https://a/9",
@@ -398,7 +398,7 @@ def test_instruction_shaped_items_never_reach_the_store(tmp_path):
 ])
 def test_real_headlines_are_not_mistaken_for_instructions(title, summary):
     """Measured against 20 live BBC and Hacker News items: 0 dropped."""
-    from jesse.digest.feeds import looks_like_instruction
+    from pinkman.digest.feeds import looks_like_instruction
     assert not looks_like_instruction(title, summary)
 
 

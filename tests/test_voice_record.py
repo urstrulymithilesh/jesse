@@ -6,7 +6,7 @@ import wave
 import numpy as np
 import pytest
 
-from jesse.voice_record import RATE, main, pending_prompts, quality, save_clip
+from pinkman.voice_record import RATE, main, pending_prompts, quality, save_clip
 
 
 def audio():
@@ -47,7 +47,7 @@ def test_recording_requires_review_and_resumes_without_opening_audio(tmp_path, m
     events = []
     answers = iter(["", "k"])
     monkeypatch.setattr("builtins.input", lambda _: next(answers))
-    monkeypatch.setattr("jesse.voice_record.time.sleep", lambda _: None)
+    monkeypatch.setattr("pinkman.voice_record.time.sleep", lambda _: None)
     monkeypatch.setitem(sys.modules, "sounddevice", SimpleNamespace(
         check_input_settings=lambda **_: None, check_output_settings=lambda **_: None,
         rec=lambda *a, **kw: audio(), wait=lambda: None,

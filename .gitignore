@@ -6,7 +6,7 @@ __pycache__/
 venv/
 env/
 
-# Jesse runtime data (local, private — never commit)
+# Pinkman runtime data (local, private — never commit)
 *.db
 *.sqlite
 *.sqlite3

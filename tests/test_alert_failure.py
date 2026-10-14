@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from jesse.core.state import ConversationState
-from jesse.ui.channel import TextChannel
+from pinkman.core.state import ConversationState
+from pinkman.ui.channel import TextChannel
 from tests.test_orchestrator import END, SPEECH, WAKE, _build
 
 

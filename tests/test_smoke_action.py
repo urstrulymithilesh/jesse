@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from jesse.core.interfaces import Message
-from jesse import smoke
+from pinkman.core.interfaces import Message
+from pinkman import smoke
 
 
 @pytest.mark.parametrize("target", ["photoshop", "photo shop"])

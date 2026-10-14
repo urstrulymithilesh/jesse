@@ -1,7 +1,7 @@
 [project]
-name = "jesse"
+name = "pinkman"
 version = "0.0.1"
-description = "A fully-local, offline voice AI companion. No cloud, no cost, complete privacy."
+description = "Pinkman: a fully local voice friend with private memory and a custom voice."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"  # 3.13 verified working (all ML wheels present)
 license = { text = "MIT" }

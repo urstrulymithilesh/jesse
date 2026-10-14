@@ -72,7 +72,7 @@ def package_model(root: Path, session_factory=None) -> Path:
     if session_factory is None:
         from onnxruntime import InferenceSession
         session_factory = InferenceSession
-    model = root / "output" / "yo_jesse.onnx"
+    model = root / "output" / "yo_pinkman.onnx"
     session = session_factory(str(model), providers=["CPUExecutionProvider"])
     inputs = session.get_inputs()
     if len(inputs) != 1:
@@ -90,18 +90,18 @@ def package_model(root: Path, session_factory=None) -> Path:
         "openwakeword_revision": OPENWAKEWORD_REV, "piper_revision": PIPER_REV,
         "trainer_patch": "five argparse string False defaults replaced by boolean False",
         "input_shape": shape, "silence_embedding_score": float(score.item()),
-        "config_sha256": sha256(root / "yo_jesse.yaml"),
+        "config_sha256": sha256(root / "yo_pinkman.yaml"),
         "human_acceptance_passed": False,
-        "note": "Export/inference check only. Run Jesse wake-check on held-out human audio.",
+        "note": "Export/inference check only. Run Pinkman wake-check on held-out human audio.",
     }
     report_path = root / "export-report.json"
     # A later successful training attempt can produce a different model; keep each bundle.
     import uuid
     import zipfile
-    bundle = root / f"yo_jesse-{uuid.uuid4().hex[:8]}.zip"
+    bundle = root / f"yo_pinkman-{uuid.uuid4().hex[:8]}.zip"
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     with zipfile.ZipFile(bundle, "x", compression=zipfile.ZIP_DEFLATED) as archive:
-        for path in (model, report_path, root / "yo_jesse.yaml", root / "environment.txt"):
+        for path in (model, report_path, root / "yo_pinkman.yaml", root / "environment.txt"):
             archive.write(path, path.name)
         for path in sorted(root.glob("*.log")):
             archive.write(path, path.name)

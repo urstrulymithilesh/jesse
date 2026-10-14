@@ -8,8 +8,8 @@ subtlety immediately -- mu-law has TWO zero codes (0x7F and 0xFF), so a naive
 
 import numpy as np
 
-from jesse.audio.frames import SAMPLE_RATE
-from jesse.remote.g711 import (
+from pinkman.audio.frames import SAMPLE_RATE
+from pinkman.remote.g711 import (
     PHONE_RATE,
     phone_to_pipeline,
     pipeline_to_phone,

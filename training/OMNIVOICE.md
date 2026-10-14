@@ -6,8 +6,8 @@ transcripts, voice prompts and auditions stay in ignored **data/voice-clone/**.
 Nothing is uploaded. **Current status, 2026-10-11:** the user selected faster
 sample A, using 16 steps. It is selected on this PC by data/voice-clone/default.json.
 It uses the untrimmed expressive prompt, CUDA fp32, preserved output pauses and noise
-cleanup. The older auditions below are retained as experimental history. Ryan is
-available with --voice en_US-ryan-high; installations without a local default
+cleanup. The older auditions below are retained as experimental history. the fallback voice is
+available with --voice en_US-pinkman-fallback; installations without a local default
 profile continue to use Piper. Quality is accepted; latency and live headset
 acceptance remain open.
 
@@ -31,7 +31,7 @@ Public model weights and the bundled tokenizer were downloaded to
 
     c5fdb5ccb189668d56333f77ba2629f4cd7535f4
 
-The existing Jesse environment is unchanged. CPU float32 avoids assuming the
+The existing Pinkman environment is unchanged. CPU float32 avoids assuming the
 older GPU supports the upstream CUDA stack. No paid compute or cloud voice
 processing is configured. CPU speed must be measured on actual generated speech.
 
@@ -41,7 +41,7 @@ First select a complete 3–10 second WAV excerpt and write its exact words to a
 UTF-8 text file. Do not use the full paragraph as one reference. Then run:
 
 ~~~powershell
-data/omnivoice-env/Scripts/python.exe training/clone_omnivoice.py --reference data/voice-clone/conversational.wav --transcript data/voice-clone/conversational.txt --text "Hey, it's Jesse. Good to hear from you. What are we working on today?" --output data/voice-clone/new-audition
+data/omnivoice-env/Scripts/python.exe training/clone_omnivoice.py --reference data/voice-clone/conversational.wav --transcript data/voice-clone/conversational.txt --text "Hey, it's Pinkman. Good to hear from you. What are we working on today?" --output data/voice-clone/new-audition
 ~~~
 
 The output directory must be new. The script rejects silent/clipped/non-finite
@@ -119,9 +119,9 @@ headset interruption remain unverified. No benchmark selects a production voice.
 
 ## Optional live backend (2026-10-08)
 
-Jesse can run OmniVoice in a separate, persistent local Python process. It loads
+Pinkman can run OmniVoice in a separate, persistent local Python process. It loads
 the model and saved prompt once, keeping the codec on CPU and the diffusion model
-on GPU. Jesse's existing Python environment needs no new dependencies. The worker
+on GPU. Pinkman's existing Python environment needs no new dependencies. The worker
 uses offline model loading and has no HTTP listener. Piper stays the default.
 
 The private profile data/voice-clone/runtime-conversational.json reproduces the
@@ -144,10 +144,10 @@ Only use your own locally prepared prompt. A requested GPU backend fails clearly
 if unavailable; it does not silently substitute another voice or CPU inference.
 
 ~~~powershell
-.venv/Scripts/python.exe -m jesse run --ollama --ui --omnivoice-profile data/voice-clone/runtime-conversational.json
+.venv/Scripts/python.exe -m pinkman run --ollama --ui --omnivoice-profile data/voice-clone/runtime-conversational.json
 ~~~
 
-The option also works through Start-Jesse.cmd. It cannot be combined with --voice.
+The option also works through Start-Pinkman.cmd. It cannot be combined with --voice.
 Model loading completes before microphone capture. Audio is generated one sentence
 at a time, then played in short PCM chunks; this is not token-level audio streaming.
 Constant peak gain matches the audible audition previews, without pitch shifting.
@@ -308,7 +308,7 @@ runtime-approved.json contains:
 ~~~
 
 The same settings in private data/voice-clone/default.json select this voice for
-Start-Jesse.cmd and jesse run. An explicit --omnivoice-profile selects another
+Start-Pinkman.cmd and pinkman run. An explicit --omnivoice-profile selects another
 profile; --voice selects Piper. Missing/corrupt configured assets or missing FFmpeg
 fail clearly. There is no silent CPU/voice substitution. Private assets stay local.
 
@@ -374,7 +374,7 @@ data/omnivoice-gpu-env/Scripts/python.exe -m training.benchmark_omnivoice --prom
 | 24 | 21.09s | 18.789s | 2.296s | 0.14s |
 | 32 | 26.42s | 25.036s | 1.373s | 0.14s |
 
-Cleanup uses jesse.tts.cleanup.clean_pcm on each normalized *-listen.wav with the
+Cleanup uses pinkman.tts.cleanup.clean_pcm on each normalized *-listen.wav with the
 existing approved-noise-reference.wav. Present only steps-16-clean.wav and
 steps-24-clean.wav under data/voice-clone/latency-auditions-2026-10-11. Every result
 is seven seconds long, unclipped, and preserves all words in local Whisper. The

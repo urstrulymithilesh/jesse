@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import asyncio
 
-from jesse.audio.vad import Vad
-from jesse.core.interfaces import Fact, LLMError
-from jesse.core.state import ConversationState
-from jesse.llm.echo import EchoLLM
-from jesse.orchestrator import Orchestrator
+from pinkman.audio.vad import Vad
+from pinkman.core.interfaces import Fact, LLMError
+from pinkman.core.state import ConversationState
+from pinkman.llm.echo import EchoLLM
+from pinkman.orchestrator import Orchestrator
 
 WAKE, SPEECH, END, STOP = b"WAKE", b"speech", b"END", b"STOP"
 
@@ -338,7 +338,7 @@ def test_recalled_fact_reaches_the_llm_context():
 
 
 def test_asks_about_past_detects_history_questions():
-    from jesse.orchestrator import _asks_about_past
+    from pinkman.orchestrator import _asks_about_past
     assert _asks_about_past("how were you before?")
     assert _asks_about_past("what did you used to be like")
     assert _asks_about_past("you've come a long way, huh")

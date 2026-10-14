@@ -7,8 +7,8 @@ that a gate is applied at all, and that the block never lets his go beyond the t
 
 import zlib
 
-from jesse.context import knowledge_context
-from jesse.memory.corpus import CorpusStore, chunk_text
+from pinkman.context import knowledge_context
+from pinkman.memory.corpus import CorpusStore, chunk_text
 
 
 class FakeEmbedder:
@@ -101,7 +101,7 @@ def test_forget_drops_the_whole_corpus(tmp_path):
 def test_the_subject_name_is_the_trigger():
     """A pure distance gate did not survive a second corpus — measured, the margin
     INVERTED at six passages. His own words don't drift as the corpus grows."""
-    from jesse.memory.corpus import subjects_mentioned
+    from pinkman.memory.corpus import subjects_mentioned
     names = ["guitar", "sourdough"]
     assert subjects_mentioned("how do I tune my guitar", names) == ["guitar"]
     assert subjects_mentioned("I think I'll cook something tonight", names) == []
@@ -110,7 +110,7 @@ def test_the_subject_name_is_the_trigger():
 
 def test_subject_matching_is_word_boundary_not_substring():
     """"guitarist" is not the guitar corpus, and "a sour taste" is not sourdough."""
-    from jesse.memory.corpus import subjects_mentioned
+    from pinkman.memory.corpus import subjects_mentioned
     names = ["guitar", "sour"]
     assert subjects_mentioned("he's a brilliant guitarist", names) == []
     assert subjects_mentioned("that left a sour taste", names) == ["sour"]
@@ -132,7 +132,7 @@ def test_search_can_be_restricted_to_named_corpora(tmp_path):
 
 
 def test_corpus_keywords_are_the_documents_recurring_distinctive_words():
-    from jesse.memory.corpus import corpus_keywords
+    from pinkman.memory.corpus import corpus_keywords
     chunks = [
         "Tune the guitar string by the fifth fret. A string settles after tuning.",
         "Change strings when dull. The fret edges poke out when the guitar is dry.",
@@ -181,7 +181,7 @@ def test_keyword_match_folds_plurals_and_respects_word_boundaries(tmp_path):
 def test_short_affirmation_shapes():
     """Only these attach the previous turn to the retrieval query. "no, my car" must
     NOT — that attachment is how a declined ask chased him with the old phrase."""
-    from jesse.orchestrator import _is_short_affirmation
+    from pinkman.orchestrator import _is_short_affirmation
     assert _is_short_affirmation("yes")
     assert _is_short_affirmation("Yeah, that.")
     assert _is_short_affirmation("okay sure")

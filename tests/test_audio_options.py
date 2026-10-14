@@ -4,10 +4,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from jesse.__main__ import _run
-from jesse.audio.calibrate import Calibration
-from jesse.audio.vad import EnergyVad
-from jesse.config import CONFIG
+from pinkman.__main__ import _run
+from pinkman.audio.calibrate import Calibration
+from pinkman.audio.vad import EnergyVad
+from pinkman.config import CONFIG
 
 
 @pytest.fixture
@@ -26,10 +26,11 @@ def startup(monkeypatch):
         return Calibration(1, 169, 14.8, 1004, True, "measured")
 
     orch.run = run
-    monkeypatch.setattr("jesse.factory.build_orchestrator", lambda **kwargs: (orch, "test", "test"))
-    monkeypatch.setattr("jesse.audio.calibrate.calibrate", calibrate)
-    monkeypatch.setattr("jesse.core.single_instance.claim", lambda _: None)
-    monkeypatch.setattr("jesse.core.single_instance.release", lambda _: None)
+    monkeypatch.setattr("pinkman.factory.build_orchestrator", lambda **kwargs: (orch, "test", "test"))
+    monkeypatch.setattr("pinkman.audio.calibrate.calibrate", calibrate)
+    monkeypatch.setattr("pinkman.core.single_instance.claim", lambda _: None)
+    monkeypatch.setattr("pinkman.core.single_instance.release", lambda _: None)
+    monkeypatch.setattr("pinkman.ui.server.start", lambda *a, **kw: "http://127.0.0.1:8765")
     return seen
 
 
@@ -56,14 +57,14 @@ def test_no_calibrate_keeps_configured_pair(startup):
 @pytest.mark.parametrize("args", [[], ["--ui", "--remote"]])
 def test_running_instance_stops_startup_before_ui_models_or_audio(monkeypatch, capsys, args):
     def unexpected(*args, **kwargs):
-        pytest.fail("startup continued despite another Jesse holding the microphone")
+        pytest.fail("startup continued despite another Pinkman holding the microphone")
 
-    monkeypatch.setattr("jesse.core.single_instance.claim", lambda _: "Another Jesse is running")
-    monkeypatch.setattr("jesse.core.single_instance.release", unexpected)
-    monkeypatch.setattr("jesse.factory.build_orchestrator", unexpected)
-    monkeypatch.setattr("jesse.ui.server.start", unexpected)
+    monkeypatch.setattr("pinkman.core.single_instance.claim", lambda _: "Another Pinkman is running")
+    monkeypatch.setattr("pinkman.core.single_instance.release", unexpected)
+    monkeypatch.setattr("pinkman.factory.build_orchestrator", unexpected)
+    monkeypatch.setattr("pinkman.ui.server.start", unexpected)
     assert _run(args) == 1
-    assert "Another Jesse is running" in capsys.readouterr().out
+    assert "Another Pinkman is running" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("flag", ["--gain", "--threshold"])
@@ -72,9 +73,9 @@ def test_invalid_audio_settings_fail_before_services_or_devices(monkeypatch, cap
     def unexpected(*args, **kwargs):
         pytest.fail("startup continued with invalid audio options")
 
-    monkeypatch.setattr("jesse.llm.ollama.OllamaLLM.check_available", unexpected)
-    monkeypatch.setattr("jesse.core.single_instance.claim", unexpected)
-    monkeypatch.setattr("jesse.factory.build_orchestrator", unexpected)
+    monkeypatch.setattr("pinkman.llm.ollama.OllamaLLM.check_available", unexpected)
+    monkeypatch.setattr("pinkman.core.single_instance.claim", unexpected)
+    monkeypatch.setattr("pinkman.factory.build_orchestrator", unexpected)
     args = ["--ollama", "--ui", flag] + ([] if value is None else [value])
     assert _run(args) == 2
     assert flag in capsys.readouterr().out

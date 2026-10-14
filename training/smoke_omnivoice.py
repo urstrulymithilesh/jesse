@@ -7,7 +7,7 @@ import time
 import wave
 from pathlib import Path
 
-from jesse.tts.omnivoice import OmniVoiceSynthesizer
+from pinkman.tts.omnivoice import OmniVoiceSynthesizer
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
         synth.start()
         report["startup_seconds"] = round(time.perf_counter() - started, 2)
         worker = synth._process
-        render("Hey, it's Jesse. Good to hear from you.", "first")
+        render("Hey, it's Pinkman. Good to hear from you.", "first")
         render("That sounds exciting. Tell me a little more about what you have in mind.", "second")
         assert synth._process is worker, "Worker was not reused"
         report["worker_reused"] = True

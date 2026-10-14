@@ -3,9 +3,9 @@ import struct
 
 import pytest
 
-from jesse.audio.echo_check import Measurement, measure_echo, report
-from jesse.audio.frames import CHUNK_SAMPLES
-from jesse.audio.vad import EnergyVad
+from pinkman.audio.echo_check import Measurement, measure_echo, report
+from pinkman.audio.frames import CHUNK_SAMPLES
+from pinkman.audio.vad import EnergyVad
 
 
 def pcm(level):
@@ -123,10 +123,10 @@ def test_cancellation_during_playback_closes_capture_and_unmutes():
     asyncio.run(scenario())
 
 
-def test_echo_command_rejects_a_running_jesse_before_opening_audio(monkeypatch, capsys):
+def test_echo_command_rejects_a_running_pinkman_before_opening_audio(monkeypatch, capsys):
     import diagnose
 
-    monkeypatch.setattr("jesse.core.single_instance.claim", lambda _: "Another Jesse is running")
+    monkeypatch.setattr("pinkman.core.single_instance.claim", lambda _: "Another Pinkman is running")
     monkeypatch.setattr(diagnose.sd, "query_devices", lambda *args: pytest.fail("opened audio"))
     assert diagnose._echo([]) == 1
-    assert "Another Jesse" in capsys.readouterr().out
+    assert "Another Pinkman" in capsys.readouterr().out

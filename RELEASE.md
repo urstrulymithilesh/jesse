@@ -1,13 +1,13 @@
-# Jesse: full-vision completion gates
+# Pinkman: full-vision completion gates
 
-Agreed 2026-10-05: finish the full vision, including **yo Jesse**, a custom voice,
+Agreed 2026-10-05: finish the full vision, including **yo Pinkman**, a custom voice,
 and calling a phone number. Do not substitute more unrelated bug fixes for these
 milestones. This file tracks acceptance, not estimated percentages.
 
 | Milestone | Current evidence | Done when |
 |---|---|---|
-| Core conversation and memory | 640 tests pass; last broad smoke 13/14 passed, knowledge passed unchanged rerun after a one-word STT miss | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
-| Custom wake phrase | Asset loading and WAV evaluation tooling; training recipe prepared | A trained `yo_jesse.onnx` meets sampled recall/false-activation gates and works with Mithilesh's real voice, including interruption and echo checks |
+| Core conversation and memory | 646 tests pass; all 14 real-stack smoke scenarios pass | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
+| Custom wake phrase | Asset loading and WAV evaluation tooling; training recipe prepared | A trained `yo_pinkman.onnx` meets sampled recall/false-activation gates and works with Mithilesh's real voice, including interruption and echo checks |
 | Own-voice clone | Faster 16-step sample A accepted; preserved reference pauses and noise cleanup integrated | Acceptable latency and a normal headset conversation with the approved voice |
 | Phone calls | G.711 codec and existing transport seam | Echo-safe call transport, authenticated Media Streams/TwiML integration, public endpoint, and a real call using Mithilesh's account/number |
 | Release usability | Windows launcher and current instructions | Start reliably from a fresh terminal, diagnose missing assets, preserve memory across restart, document actual limitations |
@@ -38,7 +38,7 @@ conversation remains unverified.
 Use Mithilesh's own voice, with American English, approximately age 21, and a
 charismatic, friendly delivery. He authorized cloning his own voice. The recordings
 must supply the desired accent and energy; a text label does not guarantee them.
-Keep Ryan available as the explicit faster voice option.
+Keep the fallback voice available as the explicit faster voice option.
 
 ## Execution order
 
@@ -47,7 +47,7 @@ only**. No paid compute is authorized. The notebook is prepared; its first GPU
 run and the trained model are still pending.
 
 1. Keep the accepted voice quality; reduce latency and validate it on the headset.
-2. Train `yo Jesse` with the upstream synthetic-data pipeline. Evaluate held-out
+2. Train `yo Pinkman` with the upstream synthetic-data pipeline. Evaluate held-out
    recordings and real background audio locally before selecting it for daily use.
 3. Verify the selected wake and voice assets together in normal conversation.
 4. Validate a normal local conversation using the selected wake/voice assets.
@@ -56,8 +56,11 @@ run and the trained model are still pending.
    and complete a real call. Do not revisit the paused Tailscale setup as the goal.
 
 Training, microphone acceptance and a live call are **not complete**. The repository
-currently contains no trained `yo Jesse` model. Own-voice prompts and audio exist
+currently contains no trained `yo Pinkman` model. Own-voice prompts and audio exist
 locally under ignored data; they are not committed or uploaded. GPU voice inference
 is selected locally through the private default profile; speaker authentication remains deferred.
 
 See [training/README.md](training/README.md) for collection and training commands.
+
+Current launch identity: **Pinkman**. Manual Wake Pinkman / Interrupt controls are
+the default until custom wake training and acceptance are complete.

@@ -1,4 +1,4 @@
-"""Jesse Phase 0 spike — hardware + plumbing, in one sitting.
+"""Pinkman Phase 0 spike — hardware + plumbing, in one sitting.
 
 Answers two questions from the design doc's Assignment:
   1. HARDWARE: is the wake -> STT -> LLM -> TTS round-trip in the ~2-5s range?
@@ -24,7 +24,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from jesse.config import CONFIG
+from pinkman.config import CONFIG
 
 OK, WARN, BAD, DASH = "PASS", "WARN", "FAIL", " -- "
 _rows: list[tuple[str, str, str]] = []
@@ -158,13 +158,13 @@ def check_piper() -> None:
     except ImportError:
         row("Piper (piper-tts)", BAD, "not installed (pip install piper-tts)")
         return
-    from jesse.tts.piper import PiperSynthesizer
+    from pinkman.tts.piper import PiperSynthesizer
     if PiperSynthesizer.is_available():
         row("Piper (piper-tts)", OK, f"voice '{CONFIG.speech.piper_voice}' ready")
     else:
         row("Piper (piper-tts)", WARN,
-            f"pkg ok, voice missing — python -m piper.download_voices "
-            f"{CONFIG.speech.piper_voice} --download-dir models")
+            "optional fallback missing — install a catalogue voice and rename its "
+            f"model/config pair to {CONFIG.speech.piper_voice} in models (README Setup)")
 
 
 def check_ollama() -> None:
@@ -212,7 +212,7 @@ def check_ollama() -> None:
 def main() -> int:
     wav = Path(sys.argv[1]) if len(sys.argv) > 1 else None
     print("=" * 68)
-    print(" Jesse Phase 0 spike — hardware + plumbing")
+    print(" Pinkman Phase 0 spike — hardware + plumbing")
     print("=" * 68)
 
     probe("Python")(check_python)

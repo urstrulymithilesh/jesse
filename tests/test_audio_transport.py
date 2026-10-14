@@ -5,7 +5,7 @@ import asyncio
 import numpy as np
 import pytest
 
-from jesse.audio.transport import LocalAudioTransport
+from pinkman.audio.transport import LocalAudioTransport
 
 
 @pytest.fixture
@@ -22,8 +22,8 @@ def microphone(monkeypatch):
         def __exit__(self, *args):
             pass
 
-    monkeypatch.setattr("jesse.audio.transport.validate_input_device", lambda _: None)
-    monkeypatch.setattr("jesse.audio.transport.sd.RawInputStream", InputStream)
+    monkeypatch.setattr("pinkman.audio.transport.validate_input_device", lambda _: None)
+    monkeypatch.setattr("pinkman.audio.transport.sd.RawInputStream", InputStream)
     return callbacks
 
 
@@ -98,7 +98,7 @@ def test_output_failure_closes_synthesis_iterator(monkeypatch):
             yield b"\x01\x01"
         finally:
             closed.append(True)
-    monkeypatch.setattr("jesse.audio.transport.sd.RawOutputStream", BrokenOutput)
+    monkeypatch.setattr("pinkman.audio.transport.sd.RawOutputStream", BrokenOutput)
     async def scenario():
         with pytest.raises(OSError, match="disconnected"):
             await LocalAudioTransport().play(frames())

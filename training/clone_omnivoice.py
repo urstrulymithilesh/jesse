@@ -1,4 +1,4 @@
-"""Local OmniVoice audition. Run in its separate environment, not Jesse's venv."""
+"""Local OmniVoice audition. Run in its separate environment, not Pinkman's venv."""
 
 import argparse
 import hashlib
