@@ -7,7 +7,7 @@
 > Switch tools freely when you hit usage limits; continuity lives here, not in a
 > session.
 
-2026-10-12 · 646 tests · 14/14 smoke (171s) · Python 3.13 · `D:\New folder\pinkman` ·
+2026-10-14 · 655 tests · 14/14 smoke (244s) · Python 3.13 · `D:\New folder\pinkman` ·
 `github.com/urstrulymithilesh/pinkman`
 
 ---
@@ -101,7 +101,7 @@ drops few-shot examples for memory questions.
 | Actions | 23 targets · search depth 4 · top-5 |
 | Knowledge | name + keyword trigger · top-2 · 800-char chunks · gate 0.46 |
 | Sources | ON · RSS/Atom · 6h · 5/source · 3 told at once |
-| Progress log | 46 entries |
+| Progress log | 59 entries |
 
 Everything sits behind `pinkman/core/interfaces.py`. Swapping a model or engine is a
 config change.
@@ -134,8 +134,9 @@ config change.
   is usable. The deterministic registry stands.
 - **Custom wake word + voice cloning: ACTIVE as of 2026-10-05.** Mithilesh explicitly
   chose the full vision. Target phrase is "yo Pinkman"; clone his own voice, American,
-  about age 21, charismatic. See `RELEASE.md`, `training/README.md` and §23. Neither
-  trained asset exists yet; do not describe this as finished or keep postponing it.
+  about age 21, charismatic. See `RELEASE.md`, `training/README.md` and §23 onward.
+  The approved 16-step clone is selected locally; headset acceptance and the custom
+  wake model remain unfinished. Do not describe the full milestone as finished.
 - **Voice authentication.** Pairs with the voice phase.
 - **Multi-turn slot-filling.** "Change the timer" → "to what?" is not supported by
   design. He asks for the missing piece; the request must come in one utterance.
@@ -151,7 +152,7 @@ config change.
 |---|---|---|
 | 1 | Reliability / smoke harness | **done** |
 | 2 | Continuous conversation | **done** |
-| 3 | Custom wake word + voice cloning | **active** — collection, integration and evaluation tools ready; training pending |
+| 3 | Custom wake word + voice cloning | **active** — approved clone integrated; custom wake training and headset acceptance pending |
 | 4 | Voice authentication | skipped by choice |
 | 5 | Episodic + temporal memory | **done** |
 | 6 | GPU | parked, externally blocked |
@@ -281,7 +282,7 @@ than a disappointing one.
 |---|---|
 | Language | Python 3.13, venv at `.venv` |
 | Reasoning | Ollama · `llama3.2` |
-| Voice | Piper `en_US-pinkman-fallback` (**GPL-3.0** — matters only if bundling a binary) |
+| Voice | Approved OmniVoice clone on CUDA; optional Piper `en_US-pinkman-fallback` (**GPL-3.0**) |
 | Hearing | faster-whisper `base.en` int8 CPU |
 | Wake | Manual UI controls (custom openWakeWord model opt-in) |
 | Memory | SQLite + sqlite-vec — one file, `data/pinkman.db` |
@@ -299,13 +300,13 @@ pinkman/
   factory.py         wires everything                  <- the swap point
   core/  audio/  stt/  tts/  llm/  memory/  schedule/  actions/  digest/  remote/  ui/
   smoke.py           the live harness
-tests/               585 tests
+tests/               655 tests
 ```
 
 ```
 .venv\Scripts\python.exe -m pinkman run --device 1 --ollama --ui
 .venv\Scripts\python.exe -m pinkman smoke            # 14 scenarios, real stack, ~4min
-.venv\Scripts\python.exe -m pytest -q              # 585 tests
+.venv\Scripts\python.exe -m pytest -q              # 655 tests
 .venv\Scripts\python.exe diagnose.py echo --device 1 --output-device 4 --gain 1 --threshold 150
 .venv\Scripts\python.exe -m pinkman memory [--forget "..."] [--dedupe [--apply]]
 .venv\Scripts\python.exe -m pinkman seed             # re-apply protected identity facts
@@ -365,12 +366,12 @@ his own voice clone and phone calls. `RELEASE.md` replaces the old subjective
 percentage estimates with explicit acceptance gates. Core features work, but
 trained custom assets, live local acceptance and phone integration are unfinished.
 
-**Next:** collect the reviewed voice pilot with `pinkman voice-record` and provision
-the separate GPU training environment for `yo Pinkman` and Piper. The user supplied
-the voice brief (§23) but has not recorded samples here. Then evaluate/audition the
-exports locally, validate normal conversation, and complete phone echo/transport
-integration (§11). Voice authentication remains skipped by choice; GPU runtime
-acceleration remains optional. Do not quietly reduce the goal to a local-only release.
+**Next:** coordinated wired-headset acceptance of the approved 16-step clone, then
+custom `yo Pinkman` training and local evaluation. Manual Wake Pinkman / Interrupt
+controls remain active. Voice generation now supports interruption without the
+usual model reload; see the latest entry. Phone echo/transport work (§11) follows
+local acceptance, but the current instruction forbids sending private audio to
+external services. Voice authentication remains skipped by choice.
 
 **Historical verification, 2026-10-01 (superseded by later checks):** 427 unit tests passed in 10.09s; the real-stack smoke
 run passed 7/9 scenarios (647s plus model warmup). Conversation, timers, barge-in,
@@ -1345,3 +1346,59 @@ speech after worker restart (47.29s), and worker cleanup passed. Cold startup to
 advertise instant startup. Report: `data/voice-clone/pinkman-relocated-smoke/report.json`.
 This confirms runtime compatibility after relocation, not a new subjective voice
 approval. Final verification recorded 2026-10-14; no changes to the approved profile.
+
+## 2026-10-14 — Interrupt without reloading the approved voice
+
+Selected the unfinished warm-cancellation capability called out in §27 and the
+voice responsiveness priority in RELEASE.md. Custom wake training needs a separate
+GPU training run and human recordings for acceptance; no trained wake asset is
+claimed. The approved clone, reference, model files, profile, recordings, memory
+and local configuration were preserved. No private data left the machine.
+
+The worker now reads request/cancel messages concurrently with serial generation.
+A temporary forward pre-hook checks between the pinned model's diffusion steps
+and unwinds only the cancelled generation. Hooks are removed on success, failure
+and cancellation. Request IDs ensure a late audio response is discarded before
+the next request. The caller returns immediately on cancel while a background
+drain waits at most two seconds for acknowledgement, then kills/reaps a stuck
+worker even without another turn. Normal cancellation keeps model weights loaded;
+startup cancellation, errors and timeouts still stop the process. Shutdown still
+closes it. Native GPU/codec work cannot be preempted mid-operation; the deadline
+provides the fallback. The approved inference parameters and noise cleanup did
+not change. This is not token-level audio streaming or phone echo cancellation.
+
+Real approved-16 worker check:
+data/voice-clone/pinkman-warm-interrupt-2026-10-14/report.json.
+Startup 58.84s; first/second generation 17.66s/17.14s. Stop at 0.50s returned at
+0.56s with no PCM; the next sentence generated in 13.80s with the same process.
+The prior relocation run needed 47.29s for that sentence including reload. These
+are separate runs, not a controlled speed ratio or end-to-end latency measurement.
+The repeated second sentence took 16.71s and was byte-identical before/after
+interruption, and to the pre-change relocation recording. Worker cleanup passed.
+The smoke script now requires reuse after interruption and equal seeded output.
+
+Full manual-wake/real Whisper/Ollama/clone/temporary-memory conversation passed in
+72.24s including startup, with 2.48s reply audio, LISTENING restored, model lock
+released and worker closed. Report:
+data/voice-clone/pinkman-warm-interrupt-loop-2026-10-14/report.json. Hardware was
+simulated; this does not close wired-headset acceptance.
+
+Final unit suite: 655 passed in 12.95s. Nine new cases cover model-step/decode
+cancellation, unchanged completed output, hook removal, warm reuse, late replies,
+wrong IDs, stuck-worker fallback and shutdown; existing local/remote interruption
+cases now require the worker to survive. Lint and diff checks passed. The first
+sandbox test attempts could not use normal temp/audio-library facilities; stopped
+those test processes and reran with normal local access. No dependency workaround
+or system configuration change was made. Progress v2.0.27 is significant.
+
+All 14 broad real-stack smoke scenarios passed in 244s, including interruption,
+immediate memory recall, timers, knowledge and authenticated remote audio. Log:
+data/smoke-warm-interrupt-2026-10-14.log. This suite uses Piper and manual controls;
+the separate clone checks above verify the changed backend. It does not establish
+custom acoustic wake quality or physical headset/phone acceptance.
+
+Next: coordinated wired-headset conversation, then the first custom wake training
+run and local evaluation. Manual Wake Pinkman / Interrupt remain the defaults.
+The current no-private-data-upload instruction takes precedence over historical
+phone-service approval; this change uses only local processes and temporary smoke
+memory. All generated audio/reports remain ignored under data/.

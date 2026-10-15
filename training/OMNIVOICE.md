@@ -153,9 +153,13 @@ at a time, then played in short PCM chunks; this is not token-level audio stream
 Constant peak gain matches the audible audition previews, without pitch shifting.
 
 Both desk and remote playback pull synthesis off the microphone event loop.
-An interruption during generation kills and reaps the worker and returns no stale
-audio; the next request starts a fresh worker. An interruption after generation
-stops chunk playback without unloading the model. Shutdown also reaps the worker.
+An interruption during generation returns promptly without stale audio. The worker
+checks cancellation between diffusion steps and keeps the model loaded. Requests
+have IDs, and the cancelled request's final response is discarded before another
+request runs. A two-second cancellation deadline kills/reaps an unresponsive
+worker even if no new turn arrives; the next request then reloads it. Interruption
+during initial loading also stops the worker. An interruption after generation
+stops chunk playback without unloading the model. Shutdown reaps the worker.
 Requests time out after 180 seconds. Phone acoustic echo handling is still separate.
 
 Headless verification, without opening microphone or speakers:
@@ -322,8 +326,8 @@ post-cleanup normalization is applied.
 FFmpeg pipe I/O runs on a separate thread because Windows communicate(timeout)
 can otherwise block while writing stdin. Cancellation and a ten-second deadline
 kill/reap the cleanup process. A failed cleanup produces an explicit voice error;
-it does not play the uncleaned reply. Generation interruption still reaps the model
-worker; a later reply reloads it. Cancellation during cleanup keeps the model warm.
+it does not play the uncleaned reply. Generation interruption now keeps a responsive
+model worker loaded, as described above. Cancellation during cleanup also keeps it warm.
 
 Processing the approved take through this generalized path gives correlation
 0.999992, zero alignment lag, and a speech-level difference of -0.0044 dB versus
@@ -410,3 +414,26 @@ profile setting selected by the user; the live headset acceptance is still open.
 The full cloned-voice conversation smoke also passed with real wake/Whisper/Ollama
 and temporary memory (simulated hardware): approved-16-loop-2026-10-11, 47.18s total
 including startup, 3s reply audio, listening state restored and model closed.
+
+## Keep the approved voice loaded through interruption (2026-10-14)
+
+The local worker now reads cancellation while generating. A temporary PyTorch
+forward pre-hook checks between diffusion steps, unwinds that generation and is
+removed on every exit. The pinned upstream model files are unchanged. A late
+response cannot become the next reply: request IDs and a drain before reuse
+discard it. Cancellation during loading, worker errors and a stuck cancellation
+still use process teardown; normal generation cancellation keeps the model warm.
+
+Real evidence: data/voice-clone/pinkman-warm-interrupt-2026-10-14/report.json.
+Startup took 58.84s; two replies took 17.66s and 17.14s. A stop at 0.50s returned
+at 0.56s without audio, then the next reply took 13.80s with the same worker.
+Repeating the second sentence took 16.71s and produced byte-identical WAV output,
+also identical to the earlier relocation smoke's second.wav. These are single-run
+synthesis measurements, not complete conversation latency or a new voice audition.
+The smoke now requires reuse after interruption and unchanged seeded output.
+
+The complete manual-wake/Whisper/Ollama/clone/memory loop passed in 72.24s including
+startup, returned to listening, and closed its worker. Evidence:
+data/voice-clone/pinkman-warm-interrupt-loop-2026-10-14/report.json. Hardware was
+simulated and memory temporary. The approved profile, reference and cleanup remain
+unchanged; a normal wired-headset session and custom wake training remain pending.

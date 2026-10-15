@@ -27,8 +27,9 @@ clean interface — not a rewrite.
                     Scheduler (SQLite-persisted timers & reminders)
 ```
 
-**Current hardware:** reasoning runs on CPU because GPU discovery fails on this
-GTX 1050. Transcription, synthesis and embeddings also run on CPU.
+**Current hardware:** reasoning runs on CPU because Ollama GPU discovery fails on
+this GTX 1050. The approved OmniVoice clone uses CUDA on that GPU; transcription,
+embeddings and the optional Piper fallback run on CPU.
 
 **Stack (all free / local):** Ollama + llama3.2 · faster-whisper · Piper ·
 openWakeWord + energy VAD · SQLite + sqlite-vec · custom asyncio orchestrator.
@@ -101,6 +102,12 @@ without another click until you say “go to sleep” or the listening window ex
 Click **Interrupt** to cut a reply short. The UI opens automatically in manual
 wake mode. The custom “yo Pinkman” model still needs training; select a validated
 model explicitly with `--wake-model` and `--wake-phrase` when it is ready.
+
+Interrupting the approved clone now cancels generation between model steps and
+keeps the voice loaded for the next reply. Unfinished audio is discarded. A worker
+that does not finish cancelling within two seconds is stopped and reloaded on its
+next use. This removes the usual reload after interruption; speech generation
+itself still takes several seconds.
 
 See **[training/README.md](training/README.md)** for local own-voice recording,
 training/export instructions, custom-model selection, and wake-word evaluation.

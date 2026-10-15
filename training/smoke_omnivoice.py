@@ -58,11 +58,21 @@ def main():
         finally:
             timer.cancel()
         report["interrupt_total_seconds"] = round(time.perf_counter() - started, 2)
-        assert not pcm and worker.poll() is not None, "Interrupted worker leaked audio or survived"
+        assert not pcm, "Interrupted worker leaked audio"
         assert report["interrupt_total_seconds"] < 2, "Interruption took too long"
         report["interruption_passed"] = True
         save()
         render("I'm back. Let's try the next thing together.", "after-interruption")
+        assert synth._process is worker and worker.poll() is None, "Cancellation reloaded the model"
+        report["worker_reused_after_interruption"] = True
+        # Same fixed sentence/seed must retain the approved voice after cancellation.
+        render("That sounds exciting. Tell me a little more about what you have in mind.",
+               "second-after-interruption")
+        before = (args.output / "second.wav").read_bytes()
+        after = (args.output / "second-after-interruption.wav").read_bytes()
+        report["repeated_audio_identical"] = before == after
+        if synth.seed is not None:
+            assert before == after, "Cancellation changed seeded voice output"
         report["recovered"] = True
     except Exception as exc:
         report["error"] = f"{type(exc).__name__}: {exc}"

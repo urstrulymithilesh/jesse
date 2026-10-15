@@ -6,9 +6,9 @@ milestones. This file tracks acceptance, not estimated percentages.
 
 | Milestone | Current evidence | Done when |
 |---|---|---|
-| Core conversation and memory | 646 tests pass; all 14 real-stack smoke scenarios pass | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
+| Core conversation and memory | 655 tests pass; all 14 real-stack smoke scenarios pass | Keep those gates passing; complete a normal headset conversation with memory recall, timer, interruption and restart |
 | Custom wake phrase | Asset loading and WAV evaluation tooling; training recipe prepared | A trained `yo_pinkman.onnx` meets sampled recall/false-activation gates and works with Mithilesh's real voice, including interruption and echo checks |
-| Own-voice clone | Faster 16-step sample A accepted; preserved reference pauses and noise cleanup integrated | Acceptable latency and a normal headset conversation with the approved voice |
+| Own-voice clone | Faster 16-step sample A accepted; warm worker survives generation interruption; reference pauses and noise cleanup preserved | Acceptable latency and a normal headset conversation with the approved voice |
 | Phone calls | G.711 codec and existing transport seam | Echo-safe call transport, authenticated Media Streams/TwiML integration, public endpoint, and a real call using Mithilesh's account/number |
 | Release usability | Windows launcher and current instructions | Start reliably from a fresh terminal, diagnose missing assets, preserve memory across restart, document actual limitations |
 
@@ -34,6 +34,16 @@ signal at 0.50s returned at 0.55s with no audio. Startup depends on cache state;
 the earlier 55.22s measurement is not a controlled step-count comparison. These
 are single-run measurements, not full conversation latency. A normal headset
 conversation remains unverified.
+
+2026-10-14: generation interruption now keeps the model loaded. In the real worker
+check, the stop at 0.50s returned at 0.56s with no PCM, and the next reply took
+13.80s using the same worker. The prior relocation check took 47.29s including a
+reload for that sentence; these are separate runs, not a controlled speed ratio.
+Repeated seeded audio was byte-identical before/after cancellation and matched
+the pre-change recording. Startup still took 58.84s. A stuck worker is reaped after
+a two-second cancellation deadline and reloads on next use. This advances
+interruption responsiveness without changing the approved voice or closing the
+headset acceptance gate.
 
 Use Mithilesh's own voice, with American English, approximately age 21, and a
 charismatic, friendly delivery. He authorized cloning his own voice. The recordings

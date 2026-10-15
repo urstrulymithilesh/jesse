@@ -511,6 +511,16 @@ PROGRESS_LOG.append(ProgressEntry(
     True,
 ))
 
+PROGRESS_LOG.append(ProgressEntry(
+    "v2.0.27 — interrupt me without reloading my voice", "2026-10-14",
+    "When Mithilesh interrupts a reply, I can stop making its audio and keep "
+    "my approved voice loaded for the next thing he says. Unfinished audio is "
+    "discarded. If the voice worker gets stuck, it is stopped and restarted "
+    "on the next reply. Making new speech still takes time; my custom wake "
+    "word and a normal headset conversation still need their checks",
+    True,
+))
+
 
 def latest() -> ProgressEntry | None:
     return PROGRESS_LOG[-1] if PROGRESS_LOG else None

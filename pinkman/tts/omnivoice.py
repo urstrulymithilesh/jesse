@@ -63,10 +63,14 @@ class OmniVoiceSynthesizer:
         self._process = None
         self._responses = None
         self._closed = False
+        self._request_id = 0
+        self._pending_cancel = None
+        self.cancel_timeout = 2.0
 
     def _stop(self):
         with self._lifecycle:
             proc, self._process = self._process, None
+            self._pending_cancel = None
         if proc is not None:
             if proc.poll() is None:
                 proc.kill()
@@ -79,11 +83,24 @@ class OmniVoiceSynthesizer:
             self._closed = True
         self._stop()
 
-    def _read(self, interrupt):
+    def _send(self, request):
+        self._process.stdin.write(json.dumps(request) + "\n")
+        self._process.stdin.flush()
+
+    def _read(self, interrupt, request_id=None):
         deadline = time.monotonic() + self.timeout
         while True:
-            if self._closed or interrupt.is_set():
+            if self._closed:
                 self._stop()
+                return None
+            if interrupt.is_set():
+                if request_id is None:  # loading has no safe cancellation point
+                    self._stop()
+                else:
+                    self._send({"id": request_id, "cancel": True})
+                    self._pending_cancel = (request_id, time.monotonic() + self.cancel_timeout)
+                    threading.Thread(target=self._finish_cancel, args=(request_id,),
+                                     daemon=True, name="omnivoice-cancel").start()
                 return None
             if time.monotonic() >= deadline:
                 self._stop()
@@ -98,9 +115,46 @@ class OmniVoiceSynthesizer:
             if "error" in reply:
                 self._stop()
                 raise RuntimeError(f"OmniVoice: {reply['error']}")
+            if request_id is not None and reply.get("id") != request_id:
+                self._stop()
+                raise RuntimeError("OmniVoice returned an unexpected request ID")
             return reply
 
+    def _finish_cancel(self, request_id):
+        # Release the audio caller immediately; reap a stalled worker even if the
+        # user never speaks again. The generation lock also serializes next use.
+        with self._lock:
+            pending = self._pending_cancel
+            if pending is not None and pending[0] == request_id:
+                self._drain_cancelled(threading.Event())
+
+    def _drain_cancelled(self, interrupt):
+        """Discard the old terminal reply before reuse, or reap a stuck worker."""
+        pending = self._pending_cancel
+        if pending is None:  # close() may have already reaped it
+            return not self._closed
+        request_id, deadline = pending
+        while not self._closed and not interrupt.is_set():
+            try:
+                reply = self._responses.get_nowait()
+            except queue.Empty:
+                if time.monotonic() >= deadline:
+                    self._stop()
+                    return True
+                interrupt.wait(0.05)
+                continue
+            if (not isinstance(reply, dict) or reply.get("id") != request_id
+                    or "error" in reply
+                    or not (reply.get("cancelled") is True or "pcm" in reply)):
+                self._stop()
+            else:
+                self._pending_cancel = None
+            return True
+        return False
+
     def _start(self, interrupt):
+        if self._pending_cancel is not None and not self._drain_cancelled(interrupt):
+            return False
         with self._lifecycle:
             if self._closed:
                 raise RuntimeError("OmniVoice is closed")
@@ -155,9 +209,9 @@ class OmniVoiceSynthesizer:
             try:
                 if not self._start(interrupt):
                     return
-                self._process.stdin.write(json.dumps({"text": text}) + "\n")
-                self._process.stdin.flush()
-                reply = self._read(interrupt)
+                self._request_id += 1
+                self._send({"id": self._request_id, "text": text})
+                reply = self._read(interrupt, self._request_id)
                 if reply is None or interrupt.is_set():
                     return
                 pcm = base64.b64decode(reply["pcm"], validate=True)

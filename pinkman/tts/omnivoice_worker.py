@@ -5,7 +5,82 @@ import base64
 import contextlib
 import json
 import os
+import queue
 import sys
+import threading
+
+
+class GenerationCancelled(Exception):
+    """Unwind a generation between model steps without unloading its weights."""
+
+
+@contextlib.contextmanager
+def cancellation_guard(model, cancelled):
+    def check(*_):
+        if cancelled.is_set():
+            raise GenerationCancelled
+
+    check()
+    # The pinned OmniVoice decoder calls model(...) once per diffusion step.
+    # A hook leaves inputs, weights, RNG and completed audio unchanged.
+    hook = model.register_forward_pre_hook(check)
+    try:
+        yield
+        check()  # also discard cancellation during final CPU audio decoding
+    finally:
+        hook.remove()
+
+
+def serve_requests(render, source, send):
+    """Read cancellation concurrently; generate serially with one terminal reply/id."""
+    jobs = queue.Queue()
+    active = {}
+    lock = threading.Lock()
+
+    def read():
+        try:
+            for line in source:
+                request = json.loads(line)
+                request_id = request["id"]
+                with lock:
+                    if request.get("cancel") is True:
+                        event = active.get(request_id)
+                        if event is not None:
+                            event.set()
+                    else:
+                        if request_id in active:
+                            raise ValueError("Duplicate voice request ID")
+                        event = active[request_id] = threading.Event()
+                        jobs.put((request_id, request["text"], event))
+        except (ValueError, KeyError, TypeError, OSError) as exc:
+            jobs.put(exc)
+        finally:
+            with lock:
+                for event in active.values():
+                    event.set()
+            jobs.put(None)
+
+    threading.Thread(target=read, daemon=True, name="voice-requests").start()
+    while True:
+        job = jobs.get()
+        if job is None:
+            return
+        if isinstance(job, Exception):
+            raise job
+        request_id, text, cancelled = job
+        try:
+            if cancelled.is_set():
+                raise GenerationCancelled
+            pcm = render(text, cancelled)
+            reply = {"pcm": base64.b64encode(pcm).decode("ascii")}
+        except GenerationCancelled:
+            reply = {"cancelled": True}
+        finally:
+            with lock:
+                active.pop(request_id, None)
+        if cancelled.is_set():
+            reply = {"cancelled": True}
+        send({"id": request_id, **reply})
 
 
 def main():
@@ -46,12 +121,12 @@ def main():
                 model.audio_tokenizer = tokenizer
             prompt = VoiceClonePrompt.load(args.prompt)
         send({"ready": True, "sample_rate": model.sampling_rate})
-        for line in sys.stdin:
-            request = json.loads(line)
-            with contextlib.redirect_stdout(sys.stderr), torch.inference_mode():
+        def render(text, cancelled):
+            with (contextlib.redirect_stdout(sys.stderr), torch.inference_mode(),
+                  cancellation_guard(model, cancelled)):
                 if args.seed is not None:
                     torch.manual_seed(args.seed)
-                audio = np.asarray(model.generate(text=request["text"], language="en",
+                audio = np.asarray(model.generate(text=text, language="en",
                     voice_clone_prompt=prompt, num_step=args.steps,
                     postprocess_output=not args.keep_pauses)[0], dtype=np.float32)
                 if audio.size == 0 or not np.isfinite(audio).all():
@@ -61,7 +136,9 @@ def main():
                     raise ValueError("Voice generation returned silence")
                 # Match the audible auditions with constant peak gain, no pitch change.
                 pcm = (np.clip(audio * (0.85 / peak), -1, 1) * 32767).astype("<i2").tobytes()
-            send({"pcm": base64.b64encode(pcm).decode("ascii")})
+            return pcm
+
+        serve_requests(render, sys.stdin, send)
     except Exception as exc:  # noqa: BLE001 - report any model failure over IPC
         send({"error": f"{type(exc).__name__}: {exc}"})
         return 1
